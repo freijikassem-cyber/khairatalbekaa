@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+db.sqlite3
+staticfiles/
+.env
+received_*
+upload_server.py
+transform.py
+runserver.log

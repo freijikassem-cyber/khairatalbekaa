@@ -15,6 +15,14 @@ DEBUG = os.environ.get("DEBUG", "1") == "1"
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 _csrf = os.environ.get("CSRF_TRUSTED_ORIGINS", "")
 CSRF_TRUSTED_ORIGINS = [o for o in _csrf.split(",") if o]
+# Render assigns the public hostname at deploy time — trust it automatically
+_render_host = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "")
+if _render_host:
+    origin = f"https://{_render_host}"
+    if origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
+    if _render_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_render_host)
 
 INSTALLED_APPS = [
     "django.contrib.admin",

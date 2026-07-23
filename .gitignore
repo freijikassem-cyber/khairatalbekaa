@@ -7,3 +7,9 @@ received_*
 upload_server.py
 transform.py
 runserver.log
+
+gh_auth.*
+authlog.txt
+code.txt
+status.txt
+pyauth.out

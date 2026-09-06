@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>خيرات البقاع الأخضر — أسماك ومأكولات بحرية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+<style>
+/* ── Variables ─────────────────────────────────────────────── */
+:root {
+  --green:       #2D7A2D;
+  --green-light: #4CAF50;
+  --green-pale:  #E8F5E9;
+  --green-mid:   #A5D6A7;
+  --yellow:      #F5C800;
+  --yellow-dark: #E6B800;
+  --cream:       #FFFDE7;
+  --card-bg:     #FFFFFF;
+  --dark:        #1A1A1A;
+  --grey:        #666666;
+  --border:      #D0D0D0;
+  --red:         #C62828;
+  --shadow:      0 2px 12px rgba(0,0,0,.10);
+  --radius:      12px;
+  --font:        'Cairo', 'Amiri', 'Arial', sans-serif;
+}
+
+/* ── Reset / Base ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  background: var(--cream);
+  color: var(--dark);
+  direction: rtl;
+  min-height: 100vh;
+}
+
+/* ── Page wrapper ──────────────────────────────────────────── */
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 14mm 14mm 10mm;
+  background: var(--cream);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Background pattern ─────────────────────────────────────── */
+.page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(45,122,45,.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: white;
+  border: 2px solid var(--green);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--yellow) 0%, var(--green) 60%, var(--yellow) 100%);
+}
+
+.logo-wrap img {
+  height: 60px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.header-text {
+  text-align: right;
+  flex: 1;
+}
+.header-text h1 {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--green);
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+}
+.header-text h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--yellow-dark);
+  margin-top: 2px;
+}
+.header-text p {
+  font-size: 10px;
+  color: var(--grey);
+  margin-top: 2px;
+}
+
+/* ── Section banner ──────────────────────────────────────────── */
+.section-banner {
+  background: var(--green);
+  color: white;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 0;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.section-banner::before,
+.section-banner::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 10px;
+  background: var(--yellow);
+  border-radius: 4px;
+}
+.section-banner::before { right: 0; }
+.section-banner::after  { left: 0; }
+
+/* ── Product grid ────────────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+/* ── Product card ────────────────────────────────────────────── */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  transition: transform .2s, box-shadow .2s;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.14);
+}
+
+/* Image area */
+.card-img-wrap {
+  background: var(--green-pale);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 130px;
+  position: relative;
+  overflow: hidden;
+}
+.card-img-wrap img {
+  max-width: 100%;
+  max-height: 120px;
+  object-fit: contain;
+  display: block;
+  padding: 6px;
+  transition: opacity .3s;
+}
+
+/* Placeholder shown while image loads or on error */
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--green-pale);
+  color: var(--grey);
+  font-size: 9px;
+  gap: 6px;
+  z-index: 1;
+}
+.placeholder svg {
+  opacity: .35;
+}
+
+/* Yellow divider stripe */
+.stripe {
+  height: 3px;
+  background: linear-gradient(90deg, var(--yellow) 0%, var(--green-light) 100%);
+  flex-shrink: 0;
+}
+
+/* Card body */
+.card-body {
+  padding: 8px 8px 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.card-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dark);
+  text-align: center;
+  line-height: 1.4;
+  margin-bottom: 3px;
+  direction: rtl;
+}
+.card-brand {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--green);
+  text-align: center;
+  letter-spacing: .4px;
+  margin-bottom: auto;
+}
+
+/* Card footer (barcode) */
+.card-footer {
+  background: var(--green-pale);
+  padding: 4px 8px 5px;
+  text-align: center;
+  margin-top: 6px;
+  border-top: 1px solid var(--green-mid);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+.barcode-label {
+  font-size: 8px;
+  color: var(--green);
+  font-weight: 600;
+  letter-spacing: .3px;
+  direction: ltr;
+  display: block;
+}
+.barcode-num {
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--dark);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+  direction: ltr;
+  display: block;
+  margin-top: 1px;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.footer {
+  background: var(--green);
+  color: white;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 7px 0 6px;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.footer::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--yellow);
+}
+
+/* ── Print styles ────────────────────────────────────────────── */
+@media print {
+  body { background: white; }
+  .page {
+    width: 100%;
+    padding: 10mm;
+    box-shadow: none;
+    margin: 0;
+  }
+  .card { break-inside: avoid; }
+  .card:hover { transform: none; box-shadow: var(--shadow); }
+}
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+</style>
+</head>
+
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo-wrap">
+      <img src="data:image/jpeg;base64,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" alt="شعار خيرات البقاع الأخضر">
+    </div>
+    <div class="header-text">
+      <h1>خيرات البقاع الأخضر</h1>
+      <h2>أسماك ومأكولات بحرية</h2>
+      <p>منتجات مختارة بعناية — جودة عالية</p>
+    </div>
+  </header>
+
+  <!-- Section label -->
+  <div class="section-banner">كتالوج المنتجات المختارة &mdash; أسماك ومأكولات بحرية</div>
+
+  <!-- Product grid (filled by JS) -->
+  <div class="grid" id="grid"></div>
+
+  <!-- Footer -->
+  <footer class="footer">خيرات البقاع الأخضر &mdash; منتجات غذائية عالية الجودة</footer>
+
+</div>
+
+<script>
+const PRODUCTS = [
+  {
+    "barcode": "8855301218584",
+    "name_ar": "تونة آفيا بالزيت ١٦٠ غ",
+    "brand": "AFIA",
+    "img_urls": [
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/front_en.1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/front_en.2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/front_en.3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/front_en.4.full.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/front_en.5.full.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/front_en.6.full.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/front_en.7.full.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/front_en.8.full.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/front_en.full.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/front_en.400.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/front_en.200.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/front.full.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/front.400.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/front.200.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/1.400.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/1.200.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/2.400.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/2.200.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/3.400.jpg",
+      "https://images.openfoodfacts.org/images/products/885/530/121/8584/3.200.jpg"
+    ]
+  },
+  {
+    "barcode": "5285007521979",
+    "name_ar": "سردين كابتن فيشر بالزيت ١٢٥ غ",
+    "brand": "CAPTAIN FISHER",
+    "img_urls": [
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/front_en.1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/front_en.2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/front_en.3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/front_en.4.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/front_en.5.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/front_en.6.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/front_en.7.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/front_en.8.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/front_en.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/front_en.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/front_en.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/front.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/front.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/front.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/1.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/1.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/2.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/2.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/3.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1979/3.200.jpg"
+    ]
+  },
+  {
+    "barcode": "5285007521924",
+    "name_ar": "تونة بيضاء كابتن فيشر بالزيت ١٨٥ غ",
+    "brand": "CAPTAIN FISHER",
+    "img_urls": [
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/front_en.1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/front_en.2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/front_en.3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/front_en.4.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/front_en.5.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/front_en.6.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/front_en.7.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/front_en.8.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/front_en.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/front_en.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/front_en.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/front.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/front.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/front.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/1.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/1.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/2.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/2.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/3.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/752/1924/3.200.jpg"
+    ]
+  },
+  {
+    "barcode": "5283003612035",
+    "name_ar": "سردين شتورة غاردن بالزيت ١٢٥ غ",
+    "brand": "CHTOURA GARDEN",
+    "img_urls": [
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/front_en.1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/front_en.2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/front_en.3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/front_en.4.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/front_en.5.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/front_en.6.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/front_en.7.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/front_en.8.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/front_en.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/front_en.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/front_en.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/front.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/front.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/front.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/1.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/1.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/2.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/2.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/3.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/300/361/2035/3.200.jpg"
+    ]
+  },
+  {
+    "barcode": "5285000834885",
+    "name_ar": "تونة بلان سوليل بالزيت ١٨٥ غ",
+    "brand": "PLEIN SOLEIL",
+    "img_urls": [
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/front_en.1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/front_en.2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/front_en.3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/front_en.4.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/front_en.5.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/front_en.6.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/front_en.7.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/front_en.8.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/front_en.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/front_en.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/front_en.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/front.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/front.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/front.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/1.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/1.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/2.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/2.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/3.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/4885/3.200.jpg"
+    ]
+  },
+  {
+    "barcode": "5285000835387",
+    "name_ar": "سردين بلان سوليل بالزيت ١٢٥ غ",
+    "brand": "PLEIN SOLEIL",
+    "img_urls": [
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/front_en.1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/front_en.2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/front_en.3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/front_en.4.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/front_en.5.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/front_en.6.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/front_en.7.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/front_en.8.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/front_en.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/front_en.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/front_en.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/front.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/front.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/front.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/1.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/1.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/2.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/2.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/3.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/5387/3.200.jpg"
+    ]
+  },
+  {
+    "barcode": "5285000830290",
+    "name_ar": "أصابع سمك سيبلو ١٠ قطع ٢٥٠ غ",
+    "brand": "SIBLOU",
+    "img_urls": [
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/front_en.1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/front_en.2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/front_en.3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/front_en.4.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/front_en.5.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/front_en.6.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/front_en.7.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/front_en.8.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/front_en.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/front_en.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/front_en.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/front.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/front.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/front.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/1.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/1.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/2.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/2.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/3.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/0290/3.200.jpg"
+    ]
+  },
+  {
+    "barcode": "5285000831204",
+    "name_ar": "عصا سرطان سيبلو كلاسيك ٢٥٠ غ",
+    "brand": "SIBLOU",
+    "img_urls": [
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/front_en.1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/front_en.2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/front_en.3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/front_en.4.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/front_en.5.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/front_en.6.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/front_en.7.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/front_en.8.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/front_en.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/front_en.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/front_en.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/front.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/front.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/front.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/1.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/1.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/2.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/2.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/3.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/500/083/1204/3.200.jpg"
+    ]
+  },
+  {
+    "barcode": "5281025000601",
+    "name_ar": "تونة مارينا بلو بالزيت ١٨٥ غ",
+    "brand": "MARINA",
+    "img_urls": [
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/front_en.1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/front_en.2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/front_en.3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/front_en.4.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/front_en.5.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/front_en.6.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/front_en.7.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/front_en.8.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/front_en.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/front_en.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/front_en.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/front.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/front.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/front.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/1.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/1.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/2.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/2.200.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/3.400.jpg",
+      "https://images.openfoodfacts.org/images/products/528/102/500/0601/3.200.jpg"
+    ]
+  },
+  {
+    "barcode": "707828071013",
+    "name_ar": "تونة وايت بيل ١٨٥ غ",
+    "brand": "WHITE BELL",
+    "img_urls": [
+      "https://images.openfoodfacts.org/images/products/707/828/071/013/front_en.1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/707/828/071/013/front_en.2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/707/828/071/013/front_en.3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/707/828/071/013/front_en.4.full.jpg",
+      "https://images.openfoodfacts.org/images/products/707/828/071/013/front_en.5.full.jpg",
+      "https://images.openfoodfacts.org/images/products/707/828/071/013/front_en.6.full.jpg",
+      "https://images.openfoodfacts.org/images/products/707/828/071/013/front_en.7.full.jpg",
+      "https://images.openfoodfacts.org/images/products/707/828/071/013/front_en.8.full.jpg",
+      "https://images.openfoodfacts.org/images/products/707828071013/front_en.full.jpg",
+      "https://images.openfoodfacts.org/images/products/707828071013/front_en.400.jpg",
+      "https://images.openfoodfacts.org/images/products/707828071013/front_en.200.jpg",
+      "https://images.openfoodfacts.org/images/products/707828071013/front.full.jpg",
+      "https://images.openfoodfacts.org/images/products/707828071013/front.400.jpg",
+      "https://images.openfoodfacts.org/images/products/707828071013/front.200.jpg",
+      "https://images.openfoodfacts.org/images/products/707828071013/1.full.jpg",
+      "https://images.openfoodfacts.org/images/products/707828071013/1.400.jpg",
+      "https://images.openfoodfacts.org/images/products/707828071013/1.200.jpg",
+      "https://images.openfoodfacts.org/images/products/707828071013/2.full.jpg",
+      "https://images.openfoodfacts.org/images/products/707828071013/2.400.jpg",
+      "https://images.openfoodfacts.org/images/products/707828071013/2.200.jpg",
+      "https://images.openfoodfacts.org/images/products/707828071013/3.full.jpg",
+      "https://images.openfoodfacts.org/images/products/707828071013/3.400.jpg",
+      "https://images.openfoodfacts.org/images/products/707828071013/3.200.jpg"
+    ]
+  }
+];
+
+function tryImages(imgEl, urls, idx) {
+  if (idx >= urls.length) {
+    // All failed — show placeholder text
+    imgEl.style.display = 'none';
+    const wrap = imgEl.closest('.card-img-wrap');
+    const ph = wrap.querySelector('.placeholder');
+    if (ph) ph.style.zIndex = 2;
+    return;
+  }
+  imgEl.onload  = () => {
+    imgEl.style.opacity = 1;
+    const ph = imgEl.closest('.card-img-wrap').querySelector('.placeholder');
+    if (ph) ph.style.display = 'none';
+  };
+  imgEl.onerror = () => tryImages(imgEl, urls, idx + 1);
+  imgEl.src = urls[idx];
+  imgEl.style.opacity = 0;
+  // Fade in once loaded via onload
+  imgEl.style.transition = 'opacity .4s';
+}
+
+const grid = document.getElementById('grid');
+
+PRODUCTS.forEach(p => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="card-img-wrap">
+      <div class="placeholder">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="1.5">
+          <path d="M20 12c-2-4-5-6-8-6S6 8 4 12c2 4 5 6 8 6s6-2 8-6z"/>
+          <circle cx="12" cy="12" r="2"/>
+        </svg>
+        <span>الصورة غير متوفرة</span>
+      </div>
+      <img alt="${p.name_ar}" loading="lazy" style="opacity:0;position:relative;z-index:2;">
+    </div>
+    <div class="stripe"></div>
+    <div class="card-body">
+      <div class="card-name">${p.name_ar}</div>
+      <div class="card-brand">${p.brand}</div>
+    </div>
+    <div class="card-footer">
+      <span class="barcode-label">Barcode</span>
+      <span class="barcode-num">${p.barcode}</span>
+    </div>
+  `;
+  grid.appendChild(card);
+
+  const img = card.querySelector('img');
+  tryImages(img, p.img_urls, 0);
+});
+</script>
+</body>
+</html>

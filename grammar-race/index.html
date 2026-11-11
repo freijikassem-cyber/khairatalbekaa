@@ -1,0 +1,1095 @@
+<title>سباق النحو</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Lalezar&display=swap">
+<style>
+/* Layout: one full-screen canvas race at dusk; glass HUD on top, menu / question / result screens float above the road */
+:root{
+  --night:#130d2f;
+  --dusk:#2b1b5e;
+  --ink:#f7f1ff;
+  --muted:#bfb2e0;
+  --neon:#3fe3ff;
+  --gold:#ffc63d;
+  --good:#2fe08a;
+  --bad:#ff4d6d;
+  --warn:#ffb21f;
+  --glass:rgba(24,17,58,.78);
+  --glass-2:rgba(255,255,255,.07);
+  --line:rgba(255,255,255,.15);
+  --display:"Lalezar","Cairo",system-ui,sans-serif;
+  --body:"Cairo",system-ui,"Segoe UI",Tahoma,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--night);color:var(--ink);font-family:var(--body);overflow:hidden;-webkit-tap-highlight-color:transparent}
+#app{position:relative;height:100%;width:100%;overflow:hidden;direction:rtl}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block}
+button{font-family:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--neon);outline-offset:3px}
+
+/* ---------- HUD ---------- */
+#hud{position:absolute;top:0;left:0;right:0;padding-top:10px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;pointer-events:none;z-index:5}
+.hbox{background:var(--glass);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:6px 12px}
+#rankBox{text-align:center;min-width:74px}
+#rankBox .lbl{font-size:11px;color:var(--muted);letter-spacing:.02em}
+#rankNum{font-family:var(--display);font-size:30px;line-height:1.05;color:var(--gold)}
+#rankNum small{font-size:16px;color:var(--muted)}
+#midBox{min-width:0;display:flex;flex-direction:column;gap:6px}
+#track{position:relative;height:18px;border-radius:9px;background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.16));border:1px solid var(--line)}
+#track .flag{position:absolute;left:-4px;top:-7px;width:22px;height:30px}
+#track .dot{position:absolute;top:50%;width:12px;height:12px;margin-right:-6px;border-radius:50%;transform:translateY(-50%);border:2px solid rgba(0,0,0,.45);transition:right .12s linear}
+#track .dot.me{width:20px;height:20px;margin-right:-10px;border:2px solid #fff;box-shadow:0 0 12px var(--neon);z-index:2}
+#hudRow{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+#hudRow b{color:var(--ink);font-variant-numeric:tabular-nums}
+#pips{display:flex;gap:5px}
+.pip{width:22px;height:8px;border-radius:4px;background:rgba(255,255,255,.18)}
+.pip.cur{background:var(--neon);box-shadow:0 0 8px var(--neon)}
+.pip.ok{background:var(--good)}
+.pip.no{background:var(--bad)}
+#rightBox{display:flex;flex-direction:column;gap:6px;align-items:stretch;pointer-events:auto}
+#speedBox{text-align:center;min-width:74px}
+#speedNum{font-family:var(--display);font-size:24px;line-height:1.05;font-variant-numeric:tabular-nums}
+#speedBox .lbl{font-size:11px;color:var(--muted)}
+.iconbtn{background:var(--glass);border:1px solid var(--line);border-radius:12px;height:34px;display:grid;place-items:center;font-size:13px;font-weight:700;padding:0 10px}
+.iconbtn svg{width:18px;height:18px}
+
+/* ---------- touch steering ---------- */
+.steer{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:64px;height:64px;border-radius:50%;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;z-index:4;touch-action:none;user-select:none;-webkit-user-select:none}
+.steer svg{width:28px;height:28px}
+.steer:active,.steer.on{background:rgba(63,227,255,.25);border-color:var(--neon)}
+#stL{left:max(14px,env(safe-area-inset-left,0px))}
+#stR{right:max(14px,env(safe-area-inset-right,0px))}
+
+/* ---------- overlay screens ---------- */
+.screen{position:absolute;inset:0;z-index:10;overflow-y:auto;overscroll-behavior:contain;background:linear-gradient(180deg,rgba(14,9,36,.55),rgba(14,9,36,.92) 55%);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 28px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.hero{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;padding-top:8px}
+.hero .ava{width:118px;height:118px;border-radius:50%;background:radial-gradient(circle at 50% 40%,#ff9a6b,#7b2d78 70%);border:3px solid var(--gold);overflow:hidden;box-shadow:0 0 30px rgba(255,140,90,.45)}
+.hero .ava svg{width:100%;height:100%;display:block}
+h1.title{font-family:var(--display);font-weight:400;font-size:clamp(46px,9vw,88px);line-height:1;margin:0;color:var(--ink);text-shadow:0 3px 0 #ff4d6d,0 6px 0 #6b1d63,0 0 28px rgba(63,227,255,.5);letter-spacing:.01em}
+.tag{margin:8px 0 0;font-size:clamp(15px,2.4vw,19px);color:var(--muted);max-width:52ch;text-wrap:balance}
+.step{display:flex;flex-direction:column;gap:10px}
+.step h2{margin:0;font-family:var(--display);font-weight:400;font-size:24px;display:flex;align-items:center;gap:10px;color:var(--gold)}
+.step h2 .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--gold);color:var(--night);font-size:18px}
+.drivers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.driver{display:flex;align-items:center;gap:12px;background:var(--glass-2);border:2px solid var(--line);border-radius:18px;padding:10px 12px;text-align:right}
+.driver .pic{width:66px;height:66px;flex:none;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 40%,#ffb08a,#5d2a7a 75%)}
+.driver .pic svg{width:100%;height:100%;display:block}
+.driver .nm{font-family:var(--display);font-size:24px;line-height:1.1}
+.driver .ds{font-size:13px;color:var(--muted)}
+.driver.sel{border-color:var(--neon);background:rgba(63,227,255,.12);box-shadow:0 0 0 4px rgba(63,227,255,.15)}
+.lessons{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}
+.lesson{position:relative;background:var(--glass-2);border:2px solid var(--line);border-radius:14px;padding:12px 12px 10px;text-align:right;display:flex;flex-direction:column;gap:2px;min-height:68px;transition:transform .12s,border-color .12s}
+.lesson:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.35)}
+.lesson .ln{font-weight:800;font-size:15.5px;line-height:1.35}
+.lesson .lc{font-size:12px;color:var(--muted)}
+.lesson .st{position:absolute;left:8px;top:7px;font-size:12px;color:var(--gold);letter-spacing:1px}
+.lesson.sel{border-color:var(--gold);background:rgba(255,198,61,.14)}
+.lesson.mix{border-style:dashed}
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.how div{background:var(--glass-2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:13.5px;color:var(--muted);display:flex;gap:10px;align-items:flex-start}
+.how svg{width:34px;height:34px;flex:none}
+.how b{color:var(--ink);display:block;font-size:14.5px}
+.go{align-self:center;font-family:var(--display);font-size:30px;padding:10px 54px 12px;border-radius:999px;border:0;color:#2a0c18;background:linear-gradient(180deg,#ffe07a,#ffb21f);box-shadow:0 6px 0 #b4560f,0 0 30px rgba(255,178,31,.5);transition:transform .1s}
+.go small{display:block;font-family:var(--body);font-size:14px;font-weight:800;margin-top:-4px;opacity:.8}
+.go:hover{transform:translateY(-2px)}
+.go:active{transform:translateY(3px);box-shadow:0 3px 0 #b4560f}
+.sticky-go{position:sticky;bottom:0;display:flex;justify-content:center;padding:14px 0 4px;background:linear-gradient(180deg,transparent,rgba(14,9,36,.95) 40%)}
+
+/* ---------- question panel ---------- */
+#qpanel{position:absolute;z-index:8;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(760px,calc(100% - 24px));background:var(--glass);border:1px solid var(--line);border-radius:22px;padding:16px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 20px 60px rgba(0,0,0,.5);animation:rise .35s cubic-bezier(.2,1.3,.4,1);max-height:calc(100% - 120px);overflow-y:auto}
+@keyframes rise{from{transform:translate(-50%,40px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+.qhead{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}
+.qava{width:58px;height:58px;border-radius:50%;overflow:hidden;border:2px solid var(--neon);background:radial-gradient(circle at 50% 40%,#ffb08a,#5d2a7a 75%)}
+.qava svg{width:100%;height:100%;display:block}
+.qmeta{font-size:12.5px;color:var(--muted)}
+.qmeta b{color:var(--neon)}
+.qtext{font-size:clamp(18px,2.8vw,23px);font-weight:800;line-height:1.55;margin-top:2px;text-wrap:balance}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:14px}
+.opt{display:flex;align-items:center;gap:10px;text-align:right;background:rgba(255,255,255,.07);border:2px solid var(--line);border-radius:14px;padding:10px 12px;font-size:17px;font-weight:700;line-height:1.45;min-height:54px;transition:background .12s,border-color .12s,transform .1s}
+.opt:hover:not(:disabled){border-color:var(--neon);background:rgba(63,227,255,.12);transform:translateY(-1px)}
+.opt .k{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.12);font-family:var(--display);font-size:18px;font-weight:400}
+.opt.right{border-color:var(--good);background:rgba(47,224,138,.2)}
+.opt.right .k{background:var(--good);color:#06321d}
+.opt.wrong{border-color:var(--bad);background:rgba(255,77,109,.2);animation:shake .35s}
+.opt.wrong .k{background:var(--bad)}
+.opt:disabled{cursor:default}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+.qhint{margin-top:10px;font-size:12.5px;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap}
+.qhint span b{color:var(--good)}
+.qhint span:last-child b{color:var(--warn)}
+#wrongBox{margin-top:12px;display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;background:rgba(255,178,31,.1);border:1px solid rgba(255,178,31,.45);border-radius:16px;padding:10px 12px}
+#wrongBox svg{width:64px;height:58px}
+#wrongBox .wt{font-family:var(--display);font-size:22px;color:var(--warn);line-height:1.2}
+#wrongBox .we{font-size:14.5px;line-height:1.6;margin-top:2px}
+#wrongBox button{grid-column:1/-1;justify-self:start;border:0;border-radius:12px;padding:8px 22px;font-weight:800;font-size:16px;background:var(--warn);color:#2a1600}
+
+/* ---------- toasts ---------- */
+#toast{position:absolute;z-index:9;left:50%;top:96px;transform:translateX(-50%);width:min(440px,calc(100% - 32px));display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;padding:10px 14px;border-radius:18px;background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:none}
+#toast.good{border:2px solid var(--gold);box-shadow:0 0 30px rgba(255,198,61,.45)}
+#toast.bad{border:2px solid var(--warn)}
+#toast.show{animation:pop .45s cubic-bezier(.2,1.5,.4,1)}
+@keyframes pop{from{transform:translateX(-50%) scale(.6);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+#toast svg{width:58px;height:58px}
+#toast .tt{font-family:var(--display);font-size:24px;line-height:1.15}
+#toast.good .tt{color:var(--gold)}
+#toast.bad .tt{color:var(--warn)}
+#toast .ts{font-size:13.5px;color:var(--ink);line-height:1.5}
+
+/* ---------- countdown ---------- */
+#count{position:absolute;inset:0;z-index:7;display:grid;place-items:center;pointer-events:none}
+#count span{font-family:var(--display);font-size:clamp(90px,22vw,190px);color:var(--ink);text-shadow:0 5px 0 #ff4d6d,0 0 40px rgba(63,227,255,.8);animation:cnt .8s ease-out both}
+@keyframes cnt{from{transform:scale(2.2);opacity:0}25%{opacity:1}to{transform:scale(.9);opacity:.95}}
+
+/* ---------- results ---------- */
+.res-top{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
+.trophy{width:120px;height:120px}
+.res-rank{font-family:var(--display);font-size:clamp(40px,8vw,70px);line-height:1;color:var(--gold)}
+.res-sub{color:var(--muted);font-size:16px;margin-top:6px}
+.stars{display:flex;gap:6px;margin-top:8px}
+.stars svg{width:38px;height:38px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{background:var(--glass-2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.stat .v{font-family:var(--display);font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat .k{font-size:12.5px;color:var(--muted)}
+.review{display:flex;flex-direction:column;gap:8px}
+.rv{display:grid;grid-template-columns:auto 1fr;gap:10px;background:var(--glass-2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.rv .m{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:800}
+.rv.ok .m{background:var(--good);color:#06321d}
+.rv.no .m{background:var(--bad)}
+.rv .q{font-weight:700;line-height:1.5}
+.rv .a{font-size:13.5px;color:var(--muted);line-height:1.6}
+.rv .a b{color:var(--good)}
+.rv .a s{color:var(--bad)}
+.btnrow{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.ghost{font-family:var(--display);font-size:22px;padding:8px 28px;border-radius:999px;background:transparent;border:2px solid var(--line)}
+.ghost:hover{border-color:var(--neon)}
+
+@media (max-width:640px){
+  .hero{grid-template-columns:1fr;justify-items:start}
+  .hero .ava{width:86px;height:86px}
+  .drivers{grid-template-columns:1fr 1fr}
+  .driver{flex-direction:column;text-align:center;gap:6px}
+  .how{grid-template-columns:1fr}
+  .opts{grid-template-columns:1fr}
+  .opt{font-size:16px;min-height:48px;padding:8px 10px}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .res-top{grid-template-columns:1fr}
+  #rankNum{font-size:24px}
+  #speedNum{font-size:20px}
+  #rankBox,#speedBox{min-width:60px;padding:4px 8px}
+  .pip{width:14px}
+  #toast{top:84px}
+  .go{font-size:26px;padding:8px 40px 10px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition:none!important}
+}
+</style>
+
+<div id="app">
+  <canvas id="cv"></canvas>
+
+  <div id="hud" hidden>
+    <div class="hbox" id="rankBox"><div class="lbl">المركز</div><div id="rankNum">1<small>/4</small></div></div>
+    <div class="hbox" id="midBox">
+      <div id="track" aria-label="تقدّم السباق">
+        <svg class="flag" viewBox="0 0 22 30" aria-hidden="true"><rect x="2" y="2" width="2" height="27" fill="#ddd"/><g fill="#fff"><rect x="4" y="3" width="16" height="12"/></g><g fill="#111"><rect x="4" y="3" width="4" height="4"/><rect x="12" y="3" width="4" height="4"/><rect x="8" y="7" width="4" height="4"/><rect x="16" y="7" width="4" height="4"/><rect x="4" y="11" width="4" height="4"/><rect x="12" y="11" width="4" height="4"/></g></svg>
+      </div>
+      <div id="hudRow">
+        <span id="lessonTag">—</span>
+        <div id="pips"></div>
+        <span>المتبقي <b id="remain">0</b> م</span>
+      </div>
+    </div>
+    <div id="rightBox">
+      <div class="hbox" id="speedBox"><div id="speedNum">0</div><div class="lbl">كم/س</div></div>
+      <button class="iconbtn" id="muteBtn" aria-label="كتم الصوت"></button>
+    </div>
+  </div>
+
+  <button class="steer" id="stL" aria-label="يسار" hidden><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <button class="steer" id="stR" aria-label="يمين" hidden><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+
+  <div id="count" hidden></div>
+
+  <div id="toast" hidden></div>
+
+  <div id="qpanel" hidden role="dialog" aria-live="polite">
+    <div class="qhead">
+      <div class="qava" id="qava"></div>
+      <div>
+        <div class="qmeta">بوابة السؤال <b id="qnum">1</b> من 5 · <span id="qlesson"></span></div>
+        <div class="qtext" id="qtext"></div>
+      </div>
+    </div>
+    <div class="opts" id="opts"></div>
+    <div class="qhint" id="qhint"><span>إجابة صحيحة: <b>طريق مختصر −450 م</b></span><span>إجابة خاطئة: <b>تحويلة +450 م</b></span></div>
+    <div id="wrongBox" hidden>
+      <svg viewBox="0 0 64 58" aria-hidden="true"><path d="M32 3 L61 54 H3 Z" fill="#ffb21f" stroke="#1d1306" stroke-width="4" stroke-linejoin="round"/><path d="M22 44 V32 Q22 25 29 25 H40" fill="none" stroke="#1d1306" stroke-width="4.5" stroke-linecap="round"/><path d="M36 19 L44 25 L36 31 Z" fill="#1d1306"/></svg>
+      <div><div class="wt">تحويلة! الطريق أطول بـ 450 م</div><div class="we" id="wrongExp"></div></div>
+      <button id="contBtn">تابع السباق</button>
+    </div>
+  </div>
+
+  <!-- MENU -->
+  <div class="screen" id="menu">
+    <div class="wrap">
+      <div class="hero">
+        <div class="ava" id="heroAva"></div>
+        <div>
+          <h1 class="title">سباق النحو</h1>
+          <p class="tag">قُد سيارتك نحو خط النهاية. على الطريق خمس بوابات أسئلة: الإجابة الصحيحة تفتح لك طريقًا مختصرًا، والخاطئة ترسلك إلى تحويلة أطول.</p>
+        </div>
+      </div>
+
+      <section class="step">
+        <h2><span class="n">1</span>اختر السائق</h2>
+        <div class="drivers" id="drivers"></div>
+      </section>
+
+      <section class="step">
+        <h2><span class="n">2</span>اختر الدرس</h2>
+        <div class="lessons" id="lessons"></div>
+      </section>
+
+      <section class="how" aria-label="طريقة اللعب">
+        <div><svg viewBox="0 0 34 34" aria-hidden="true"><rect x="4" y="6" width="4" height="26" rx="1" fill="#bfb2e0"/><rect x="26" y="6" width="4" height="26" rx="1" fill="#bfb2e0"/><rect x="2" y="4" width="30" height="10" rx="3" fill="#3fe3ff"/><text x="17" y="12.5" text-anchor="middle" font-size="9" font-weight="800" fill="#130d2f">؟</text></svg><span><b>بوابة سؤال</b>يتوقف السباق حتى تختار إجابتك.</span></div>
+        <div><svg viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="14" fill="#ffc63d"/><path d="M17 8l2.7 5.6 6.1.8-4.4 4.2 1.1 6-5.5-3-5.5 3 1.1-6-4.4-4.2 6.1-.8z" fill="#7a4a00"/></svg><span><b>إجابة صحيحة</b>إنجاز ونيترو وطريق أقصر.</span></div>
+        <div><svg viewBox="0 0 34 34" aria-hidden="true"><path d="M17 3 L32 30 H2 Z" fill="#ffb21f" stroke="#1d1306" stroke-width="2.5" stroke-linejoin="round"/><rect x="15.5" y="12" width="3" height="10" rx="1.5" fill="#1d1306"/><circle cx="17" cy="25.5" r="1.8" fill="#1d1306"/></svg><span><b>إجابة خاطئة</b>إشارة تحويلة ويطول الطريق.</span></div>
+      </section>
+
+      <div class="sticky-go"><button class="go" id="goBtn">انطلق!</button></div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="screen" id="result" hidden>
+    <div class="wrap" id="resWrap"></div>
+  </div>
+</div>
+
+<script>
+(()=>{
+"use strict";
+/* ======================================================
+   بنك الأسئلة — كل سطر: السؤال|الإجابة الصحيحة|خطأ|خطأ|خطأ|الشرح
+   ====================================================== */
+const LESSONS=[
+{id:"ismiya",name:"الجملة الاسمية",raw:`
+أيُّ الجمل الآتية جملة اسمية؟|العلمُ نورٌ|ذهبَ الطالبُ إلى المدرسة|يقرأُ أحمدُ القصة|اكتبْ درسَك|الجملة الاسمية تبدأ باسم، و«العلمُ» اسم.
+تتكوّن الجملة الاسمية من ركنين أساسيين هما:|المبتدأ والخبر|الفعل والفاعل|الفعل والمفعول به|الجار والمجرور|ركنا الجملة الاسمية: المبتدأ (المُخبَر عنه) والخبر (ما يُخبَر به).
+ما نوع جملة «السماءُ صافيةٌ»؟|جملة اسمية|جملة فعلية|شبه جملة|جملة شرطية|بدأت باسم هو «السماء» فهي اسمية.
+أيُّ الجمل الآتية ليست جملة اسمية؟|نجحَ المجتهدُ|المجتهدُ ناجحٌ|الحديقةُ جميلةٌ|أنتَ مخلصٌ|«نجحَ المجتهدُ» بدأت بفعل فهي جملة فعلية.
+حوّل «يلعبُ الأطفالُ» إلى جملة اسمية:|الأطفالُ يلعبون|لعبَ الأطفالُ|العبوا يا أطفالُ|سيلعبُ الأطفالُ|نقدّم الاسم فيصير مبتدأ: «الأطفالُ يلعبون».
+الحكم الإعرابي للمبتدأ والخبر هو:|كلاهما مرفوع|كلاهما منصوب|كلاهما مجرور|المبتدأ مرفوع والخبر منصوب|المبتدأ والخبر مرفوعان دائمًا.
+في جملة «في البيتِ ضيفٌ»:|جملة اسمية تقدّم فيها الخبر|جملة فعلية|جملة اسمية بلا خبر|ليست جملة مفيدة|«في البيت» خبر مقدّم شبه جملة، و«ضيفٌ» مبتدأ مؤخّر.
+ما إعراب «الصدقُ» في «الصدقُ منجاةٌ»؟|مبتدأ مرفوع|خبر مرفوع|فاعل مرفوع|مفعول به منصوب|«الصدقُ» اسم في أول الجملة الاسمية فهو مبتدأ.
+`},
+{id:"madi",name:"الفعل الماضي",raw:`
+أيُّ الأفعال الآتية فعل ماضٍ؟|كتبَ|يكتبُ|اكتبْ|كاتب|«كتبَ» يدل على حدث وقع في الزمن الماضي.
+يدلّ الفعل الماضي على حدث:|وقع قبل زمن التكلّم|يقع الآن|يُطلب وقوعه|سيقع في المستقبل|الماضي حدث انتهى قبل زمن الكلام.
+«الطلابُ كتبوا الدرس» الفعل «كتبوا» مبنيّ على:|الضمّ|الفتح|السكون|الكسر|يُبنى الماضي على الضم إذا اتصلت به واو الجماعة.
+«درسْتُ الدرسَ» الفعل «درسْتُ» مبنيّ على:|السكون|الفتح|الضمّ|الكسر|يُبنى الماضي على السكون إذا اتصل بضمير رفع متحرك كالتاء.
+«سافرَ أخي» الفعل «سافرَ» مبنيّ على:|الفتح|الضمّ|السكون|الكسر|الأصل في الماضي البناء على الفتح.
+من علامات الفعل الماضي أنه يقبل:|تاء التأنيث الساكنة|ياء المخاطبة|السين وسوف|حرف الجزم «لم»|نقول: كتبَتْ، فتاء التأنيث الساكنة علامة الماضي.
+«الطالباتُ نجحْنَ» الفعل «نجحْنَ» مبنيّ على:|السكون|الفتح|الضمّ|الكسر|يُبنى الماضي على السكون إذا اتصلت به نون النسوة.
+الفعل «دعا» في «دعا المؤمنُ ربَّه» مبنيّ على:|الفتح المقدّر|الضمّ|السكون|الفتح الظاهر|آخره ألف لا تظهر عليها الحركة، فهو مبنيّ على الفتح المقدّر.
+`},
+{id:"mudari",name:"الفعل المضارع",raw:`
+أيُّ الأفعال الآتية فعل مضارع؟|يسافرُ|سافرَ|سافرْ|مسافر|«يسافرُ» يدل على حدث في الحاضر أو المستقبل ويبدأ بالياء.
+يبدأ الفعل المضارع بحرف من حروف:|«أنيت»: الهمزة والنون والياء والتاء|حروف العلة|حروف الجر|«سوف» فقط|حروف المضارعة أربعة يجمعها لفظ «أنيت».
+«لن يتأخرَ المجتهدُ» الفعل «يتأخرَ»:|منصوب وعلامة نصبه الفتحة|مرفوع وعلامة رفعه الضمة|مجزوم وعلامة جزمه السكون|مبنيّ على الفتح|«لن» حرف نصب، فالمضارع بعدها منصوب بالفتحة.
+ما علامة جزم الفعل في «لم يكتبْ أحمدُ الدرسَ»؟|السكون|الفتحة|حذف النون|الضمة|«لم» حرف جزم، والمضارع الصحيح الآخر يُجزم بالسكون.
+«الطلابُ يدرسون» الفعل مرفوع وعلامة رفعه:|ثبوت النون|الضمة|الواو|الألف|«يدرسون» من الأفعال الخمسة، تُرفع بثبوت النون.
+«لن تنجحوا إلا بالجِدّ» الفعل منصوب وعلامة نصبه:|حذف النون|الفتحة|الكسرة|الياء|الأفعال الخمسة تُنصب وتُجزم بحذف النون.
+«يكتبُ الطالبُ» الفعل «يكتبُ»:|مرفوع وعلامة رفعه الضمة|منصوب|مجزوم|مبنيّ على الضمّ|المضارع يُرفع إذا لم يسبقه ناصب ولا جازم.
+أيُّ الأدوات الآتية تجزم الفعل المضارع؟|لم|لن|كي|أنْ|«لم» جازمة، أما «لن» و«كي» و«أن» فناصبة.
+`},
+{id:"amr",name:"فعل الأمر",raw:`
+أيُّ الكلمات الآتية فعل أمر؟|اجتهدْ|يجتهدُ|اجتهدَ|مجتهد|«اجتهدْ» يُطلب به حدوث الفعل.
+يُبنى فعل الأمر على ما يُجزم به:|مضارعه|ماضيه|مصدره|فاعله|قاعدة: الأمر يُبنى على ما يُجزم به مضارعه.
+«ادرسوا جيدًا» الفعل «ادرسوا» مبنيّ على:|حذف النون|السكون|الفتح|الضمّ|مضارعه «تدرسون» يُجزم بحذف النون، فالأمر يُبنى على حذف النون.
+«اسعَ إلى الخير» الفعل «اسعَ» مبنيّ على:|حذف حرف العلة|السكون|الفتح|حذف النون|آخر مضارعه حرف علة «يسعى»، فيُبنى الأمر على حذف حرف العلة.
+«اكتبْ واجبك» الفعل «اكتبْ» مبنيّ على:|السكون|الفتح|حذف النون|الضمّ|الأمر الصحيح الآخر غير المتصل بشيء يُبنى على السكون.
+فعل الأمر من الفعل «قرأ» هو:|اقرأْ|يقرأُ|قارئ|قراءة|الأمر من «قرأ - يقرأ» هو «اقرأْ».
+«ادعُ إلى سبيل ربك» الفعل «ادعُ» مبنيّ على:|حذف حرف العلة (الواو)|السكون|الضمّ|حذف النون|مضارعه «يدعو»، فحُذفت الواو في الأمر.
+«اجلسا في مكانكما» الفعل «اجلسا» مبنيّ على:|حذف النون|السكون|الفتح|الكسر|اتصلت به ألف الاثنين، فيُبنى على حذف النون.
+`},
+{id:"mafool",name:"المفعول به",raw:`
+ما المفعول به في «قرأ الطالبُ القصةَ»؟|القصةَ|الطالبُ|قرأ|لا يوجد مفعول به|«القصةَ» اسم منصوب وقع عليه فعل الفاعل.
+الحكم الإعرابي للمفعول به هو:|النصب|الرفع|الجر|الجزم|المفعول به منصوب دائمًا.
+«كافأ المديرُ المعلّمين» علامة نصب المفعول به:|الياء|الفتحة|الألف|الكسرة|«المعلّمين» جمع مذكر سالم يُنصب بالياء.
+«رأيتُ أخاك» علامة نصب «أخاك»:|الألف|الفتحة|الواو|الياء|«أخ» من الأسماء الخمسة تُنصب بالألف.
+«أكرمَ المعلمُ الطالباتِ» علامة نصب «الطالباتِ»:|الكسرة نيابةً عن الفتحة|الفتحة|الياء|الألف|جمع المؤنث السالم يُنصب بالكسرة بدل الفتحة.
+ما المفعول به في «ساعدَني صديقي»؟|ياء المتكلّم|نون الوقاية|صديقي|لا يوجد مفعول به|الياء ضمير متصل في محل نصب مفعول به، والنون للوقاية.
+أيُّ الجمل الآتية فيها مفعول به؟|زرعَ الفلاحُ الأرضَ|نامَ الطفلُ|جلسَ المعلّمُ|الجوُّ جميلٌ|«الأرضَ» وقع عليها فعل الزراعة.
+ما المفعول به في «يحبُّ اللهَ المؤمنُ»؟|اللهَ|المؤمنُ|يحبُّ|لا يوجد مفعول به|«اللهَ» مفعول به مقدّم منصوب، و«المؤمنُ» فاعل مؤخّر.
+`},
+{id:"fael",name:"الفاعل",raw:`
+ما الفاعل في «نجحَ المجتهدُ»؟|المجتهدُ|نجحَ|ضمير مستتر|لا يوجد فاعل|«المجتهدُ» اسم مرفوع قام بالفعل.
+الحكم الإعرابي للفاعل هو:|الرفع|النصب|الجر|الجزم|الفاعل مرفوع دائمًا.
+«فازَ المتسابقون» علامة رفع الفاعل:|الواو|الضمة|الألف|ثبوت النون|جمع المذكر السالم يُرفع بالواو.
+«حضرَ المعلّمان» علامة رفع الفاعل:|الألف|الضمة|الواو|الياء|المثنى يُرفع بالألف.
+ما الفاعل في «كتبْتُ الدرسَ»؟|تاء المتكلّم|الدرسَ|ضمير مستتر|كتبَ|التاء ضمير متصل في محل رفع فاعل.
+«حضرَ أبوك» علامة رفع الفاعل:|الواو|الضمة|الألف|الياء|«أب» من الأسماء الخمسة تُرفع بالواو.
+ما الفاعل في «اجتهدْ في دروسك»؟|ضمير مستتر تقديره «أنت»|دروس|الكاف|لا يوجد فاعل|فاعل فعل الأمر للمفرد ضمير مستتر وجوبًا تقديره أنت.
+يأتي الفاعل في الجملة الفعلية:|بعد الفعل|قبل الفعل|في آخر الجملة دائمًا|بعد المفعول به دائمًا|الفاعل يأتي بعد فعله، ولا يتقدّم عليه.
+`},
+{id:"hal",name:"الحال",raw:`
+ما الحال في «عادَ الجنديُّ منتصرًا»؟|منتصرًا|الجنديُّ|عادَ|لا يوجد حال|«منتصرًا» تبيّن هيئة الجندي عند عودته.
+تبيّن الحال:|هيئة صاحبها عند وقوع الفعل|زمان وقوع الفعل|سبب وقوع الفعل|مكان وقوع الفعل|الحال وصف يبيّن هيئة صاحبه، وتجيب عن «كيف؟».
+الحكم الإعرابي للحال هو:|النصب|الرفع|الجر|الجزم|الحال منصوبة دائمًا.
+الأصل في الحال أن تكون:|نكرة مشتقّة|معرفة جامدة|معرفة مشتقّة|ضميرًا|الأصل في الحال التنكير والاشتقاق، مثل: مسرعًا.
+«أقبلَ الطلابُ مسرعين» علامة نصب الحال:|الياء|الفتحة|الألف|الكسرة|«مسرعين» جمع مذكر سالم يُنصب بالياء.
+ما صاحب الحال في «شربتُ الماءَ باردًا»؟|الماء|التاء|شربَ|باردًا|«باردًا» تصف هيئة الماء، فالماء صاحب الحال.
+نوع الحال في «جاءَ الطفلُ يبكي»:|جملة فعلية|مفرد|شبه جملة|جملة اسمية|«يبكي» جملة فعلية في محل نصب حال.
+أيُّ الجمل الآتية فيها حال؟|وقفَ الخطيبُ مبتسمًا|الخطيبُ مبتسمٌ|رأيتُ الخطيبَ المبتسمَ|ابتسامةُ الخطيبِ جميلةٌ|«مبتسمًا» نكرة منصوبة تبيّن هيئة الخطيب.
+`},
+{id:"mutlaq",name:"المفعول المطلق",raw:`
+ما المفعول المطلق في «فرحَ الطالبُ فرحًا كبيرًا»؟|فرحًا|كبيرًا|الطالبُ|فرحَ|«فرحًا» مصدر من لفظ الفعل «فرح» منصوب.
+المفعول المطلق هو:|مصدر منصوب من لفظ فعله|اسم يبيّن هيئة الفاعل|اسم يبيّن سبب الفعل|ظرف زمان|المفعول المطلق مصدر يُذكر بعد فعل من لفظه.
+«احترمتُ المعلّمَ احترامَ الابنِ أباه» المفعول المطلق:|مبيّن للنوع|مؤكّد للفعل|مبيّن للعدد|ليس مفعولًا مطلقًا|أُضيف المصدر فبيّن نوع الاحترام.
+«ضربتُ الكرةَ ضربتين» المفعول المطلق:|مبيّن للعدد|مؤكّد للفعل|مبيّن للنوع|حال|«ضربتين» تبيّن عدد مرات الفعل.
+«انطلقَ القطارُ انطلاقًا» المفعول المطلق:|مؤكّد للفعل|مبيّن للنوع|مبيّن للعدد|مفعول لأجله|المصدر جاء وحده بلا وصف ولا إضافة، فهو مؤكّد.
+علامة نصب المفعول المطلق في «قفزتُ قفزتين»:|الياء لأنه مثنى|الفتحة|الألف|الكسرة|«قفزتين» مثنى يُنصب بالياء.
+أكمل بمفعول مطلق: «سعى المجتهدُ ...... الواثقين»|سعيَ|ساعيًا|مسعى|سعى|«سعيَ» مصدر من لفظ الفعل مضاف، يبيّن النوع.
+أيُّ الجمل الآتية فيها مفعول مطلق؟|صبرَ المؤمنُ صبرًا جميلًا|الصبرُ مفتاحُ الفرج|صبرَ المؤمنُ في الشدّة|المؤمنُ صابرٌ|«صبرًا» مصدر من لفظ «صبرَ» منصوب.
+`},
+{id:"liajlih",name:"المفعول لأجله",raw:`
+ما المفعول لأجله في «وقفَ الطلابُ احترامًا للمعلّم»؟|احترامًا|الطلابُ|للمعلّم|وقفَ|«احترامًا» تبيّن سبب الوقوف.
+يبيّن المفعول لأجله:|سبب وقوع الفعل|هيئة الفاعل|زمان الفعل|نوع الفعل|المفعول لأجله يجيب عن سؤال «لماذا؟».
+يكون المفعول لأجله غالبًا:|مصدرًا قلبيًا يدل على شعور|اسم مكان|اسم فاعل|ضميرًا|مثل: حبًّا، خوفًا، رغبةً، احترامًا.
+إعراب «رغبةً» في «يجتهدُ الطالبُ رغبةً في النجاح»:|مفعول لأجله منصوب|مفعول مطلق|حال|مفعول به|«رغبةً» تبيّن سبب الاجتهاد.
+ما المفعول لأجله في «تصدّقتُ ابتغاءَ مرضاةِ الله»؟|ابتغاءَ|مرضاةِ|الله|التاء|«ابتغاءَ» مصدر يبيّن سبب التصدّق.
+يصلح المفعول لأجله جوابًا للسؤال:|لماذا؟|كيف؟|متى؟|أين؟|نسأل: لماذا وقف؟ احترامًا.
+أكمل بمفعول لأجله: «صمتُّ ...... للمتحدّث»|إصغاءً|صامتًا|صمتًا|الآن|«إصغاءً» تبيّن سبب الصمت، أما «صمتًا» فمفعول مطلق.
+الحكم الإعرابي للمفعول لأجله هو:|النصب|الرفع|الجر دائمًا|الجزم|المفعول لأجله منصوب.
+`},
+{id:"fihi",name:"المفعول فيه",raw:`
+ما المفعول فيه في «سافرتُ ليلًا»؟|ليلًا|سافرَ|التاء|لا يوجد مفعول فيه|«ليلًا» ظرف زمان منصوب.
+المفعول فيه (الظرف) هو:|اسم منصوب يبيّن زمان الفعل أو مكانه|اسم يبيّن سبب الفعل|اسم يبيّن هيئة الفاعل|مصدر الفعل|المفعول فيه ظرف زمان أو ظرف مكان.
+«جلستُ تحتَ الشجرة» نوع الظرف «تحتَ»:|ظرف مكان|ظرف زمان|حال|مفعول به|«تحتَ» تبيّن مكان الجلوس.
+«استيقظتُ فجرًا» نوع الظرف «فجرًا»:|ظرف زمان|ظرف مكان|مفعول مطلق|مفعول لأجله|«فجرًا» تبيّن وقت الاستيقاظ.
+يتضمّن المفعول فيه معنى حرف الجر:|في|من|إلى|على|سافرتُ ليلًا = سافرتُ في الليل.
+ما المفعول فيه في «وقفَ الحارسُ أمامَ الباب»؟|أمامَ|الحارسُ|البابِ|وقفَ|«أمامَ» ظرف مكان منصوب.
+هل «يومُ» في «يومُ الجمعةِ يومٌ مبارك» مفعول فيه؟|لا، لأنه مبتدأ وليس فيه معنى «في»|نعم، ظرف زمان|نعم، ظرف مكان|نعم، مفعول مطلق|الظرف يجب أن يتضمّن معنى «في»، و«يومُ» هنا مبتدأ مرفوع.
+«سرتُ ميلًا» نوع «ميلًا»:|ظرف مكان|ظرف زمان|مفعول به|حال|أسماء المسافات مثل ميل وفرسخ ظروف مكان.
+`},
+{id:"mubtada",name:"المبتدأ",raw:`
+ما المبتدأ في «الكتابُ مفيدٌ»؟|الكتابُ|مفيدٌ|لا يوجد مبتدأ|الجملة كلها|«الكتابُ» اسم مرفوع في أول الجملة الاسمية.
+الحكم الإعرابي للمبتدأ هو:|الرفع|النصب|الجر|الجزم|المبتدأ مرفوع دائمًا.
+«المعلّمون مخلصون» علامة رفع المبتدأ:|الواو|الضمة|الألف|ثبوت النون|«المعلّمون» جمع مذكر سالم يُرفع بالواو.
+ما المبتدأ في «هذا كتابٌ»؟|هذا|كتابٌ|ضمير مستتر|لا يوجد مبتدأ|«هذا» اسم إشارة مبنيّ في محل رفع مبتدأ.
+ما المبتدأ في «نحنُ متعاونون»؟|نحنُ|متعاونون|الواو|النون|«نحنُ» ضمير منفصل في محل رفع مبتدأ.
+الأصل في المبتدأ أن يكون:|معرفة|نكرة|فعلًا|حرفًا|الأصل في المبتدأ التعريف.
+«الطالبتان متفوّقتان» علامة رفع المبتدأ:|الألف|الضمة|الواو|الياء|«الطالبتان» مثنى يُرفع بالألف.
+ما المبتدأ في «في الصفِّ طلابٌ»؟|طلابٌ|في الصف|الصفِّ|لا يوجد مبتدأ|«طلابٌ» مبتدأ مؤخّر، و«في الصف» خبر مقدّم.
+`},
+{id:"khabar",name:"الخبر",raw:`
+ما الخبر في «الجوُّ معتدلٌ»؟|معتدلٌ|الجوُّ|لا يوجد خبر|الجملة كلها|«معتدلٌ» هو ما أخبرنا به عن الجو.
+أنواع الخبر هي:|مفرد وجملة وشبه جملة|مفرد فقط|جملة فقط|شبه جملة فقط|يأتي الخبر مفردًا أو جملة (اسمية/فعلية) أو شبه جملة.
+نوع الخبر في «الطالبُ يكتبُ الدرسَ»:|جملة فعلية|مفرد|جملة اسمية|شبه جملة|«يكتبُ الدرسَ» جملة فعلية في محل رفع خبر.
+نوع الخبر في «العصفورُ فوقَ الشجرة»:|شبه جملة ظرفية|جار ومجرور|مفرد|جملة فعلية|«فوقَ الشجرة» ظرف ومضاف إليه، فهو شبه جملة ظرفية.
+نوع الخبر في «الحديقةُ أزهارُها جميلةٌ»:|جملة اسمية|جملة فعلية|مفرد|شبه جملة|«أزهارُها جميلةٌ» مبتدأ وخبر، فهي جملة اسمية.
+نوع الخبر في «الكتابُ في الحقيبة»:|شبه جملة (جار ومجرور)|شبه جملة ظرفية|مفرد|جملة فعلية|«في الحقيبة» حرف جر واسم مجرور.
+«اللاعبان ماهران» علامة رفع الخبر:|الألف|الضمة|الواو|الياء|«ماهران» مثنى يُرفع بالألف.
+الحكم الإعرابي للخبر المفرد هو:|الرفع|النصب|الجر|الجزم|الخبر مرفوع كالمبتدأ.
+`},
+{id:"khamsa",name:"الأسماء الخمسة",raw:`
+الأسماء الخمسة هي:|أب، أخ، حم، فو، ذو|أب، أم، أخ، أخت، عم|أب، ابن، أخ، فم، ذو|أخ، أخت، ابن، بنت، أب|الأسماء الخمسة: أبٌ، أخٌ، حمٌ، فو، ذو (بمعنى صاحب).
+تُرفع الأسماء الخمسة بـ:|الواو|الضمة|الألف|ثبوت النون|مثل: جاءَ أبوك.
+تُنصب الأسماء الخمسة بـ:|الألف|الفتحة|الياء|الكسرة|مثل: رأيتُ أباك.
+تُجرّ الأسماء الخمسة بـ:|الياء|الكسرة|الفتحة|الألف|مثل: سلّمتُ على أبيك.
+«سلّمتُ على أخيك» إعراب «أخيك»:|مجرور وعلامة جرّه الياء|منصوب وعلامة نصبه الياء|مرفوع بالواو|مجرور بالكسرة|سبقه حرف الجر «على» فجُرّ بالياء.
+أكمل: «احترمْ ...... العلمِ»|ذا|ذو|ذي|ذات|«ذا» مفعول به منصوب بالألف.
+شرط إعراب الأسماء الخمسة بالحروف:|أن تكون مفردة مضافة لغير ياء المتكلم|أن تكون جمعًا|أن تكون معرّفة بأل|أن تكون مثنّاة|تُعرب بالحروف إذا كانت مفردة مضافة إلى غير ياء المتكلم.
+في «هذا أبي» هل تُعرب «أبي» بالحروف؟|لا، لأنها مضافة إلى ياء المتكلّم|نعم، مرفوعة بالواو|نعم، مجرورة بالياء|نعم، منصوبة بالياء|المضاف إلى ياء المتكلم يُعرب بحركات مقدّرة.
+`},
+{id:"jamm",name:"جمع المذكر السالم",raw:`
+أيُّ الكلمات الآتية جمع مذكر سالم؟|المهندسون|الرجال|الطلاب|المعلّمات|«المهندسون» سلم فيه المفرد وزيدت عليه واو ونون.
+يُرفع جمع المذكر السالم بـ:|الواو|الضمة|الألف|الياء|مثل: نجحَ المجتهدون.
+يُنصب ويُجرّ جمع المذكر السالم بـ:|الياء|الفتحة والكسرة|الألف|الواو|مثل: كافأتُ المجتهدين، ومررتُ بالمجتهدين.
+إعراب «المؤمنين» في «إنّ المؤمنين صادقون»:|اسم إنّ منصوب بالياء|مبتدأ مرفوع|اسم مجرور|فاعل مرفوع|«إنّ» تنصب اسمها، وعلامة النصب الياء.
+«أثنيتُ على المجتهدين» علامة جرّ «المجتهدين»:|الياء|الكسرة|الواو|الألف|جمع المذكر السالم يُجرّ بالياء.
+جمع «معلّم» جمع مذكر سالمًا هو:|معلّمون|معالم|معلّمات|تعاليم|نزيد واوًا ونونًا: معلّمون.
+تُحذف نون جمع المذكر السالم عند:|الإضافة|التعريف بأل|النصب|الجر|مثل: حضرَ معلّمو المدرسة.
+إعراب «معلّمو» في «حضرَ معلّمو المدرسة»:|فاعل مرفوع بالواو|مبتدأ مرفوع|فاعل مرفوع بالضمة|مفعول به منصوب|فاعل مرفوع بالواو، وحُذفت النون للإضافة.
+`},
+{id:"muthanna",name:"المثنى",raw:`
+مثنى كلمة «كتاب» هو:|كتابان|كُتب|كتابون|كتابات|المثنى بزيادة ألف ونون أو ياء ونون.
+يُرفع المثنى بـ:|الألف|الواو|الضمة|الياء|مثل: نجحَ الطالبان.
+يُنصب المثنى ويُجرّ بـ:|الياء|الألف|الفتحة|الواو|مثل: قرأتُ القصتين، ومررتُ بالحديقتين.
+«قرأتُ القصتين» علامة نصب «القصتين»:|الياء|الفتحة|الألف|الكسرة|مثنى منصوب بالياء.
+إعراب «الطالبان» في «نجحَ الطالبان»:|فاعل مرفوع بالألف|مفعول به منصوب|فاعل مرفوع بالضمة|مبتدأ مرفوع|المثنى يُرفع بالألف.
+«مررتُ بالحديقتين» علامة جرّ «الحديقتين»:|الياء|الكسرة|الألف|الفتحة|مثنى مجرور بالياء.
+تُحذف نون المثنى عند:|الإضافة|التعريف بأل|الرفع|النصب|مثل: هذان كتابا أحمدَ.
+أيُّ الكلمات الآتية مثنى؟|الكتابان|البستان|عثمان|الإنسان|«البستان» و«عثمان» و«الإنسان» ألفها ونونها أصليتان، أما «الكتابان» فمثنى «الكتاب».
+`},
+{id:"sahih",name:"الفعل الصحيح والمعتل",raw:`
+الفعل المعتل هو ما كان أحد حروفه الأصلية:|حرف علّة|همزة|حرفًا مضعّفًا|حرفًا ساكنًا|حروف العلة: الألف والواو والياء.
+حروف العلّة هي:|الألف والواو والياء|الهمزة والهاء والنون|الألف والنون والتاء|الواو والنون والهاء|حروف العلة ثلاثة: ا، و، ي.
+نوع الفعل «وعدَ»:|معتل مثال|معتل أجوف|معتل ناقص|صحيح سالم|المثال ما كان أوله حرف علة.
+نوع الفعل «قالَ»:|معتل أجوف|معتل مثال|معتل ناقص|صحيح سالم|الأجوف ما كان وسطه حرف علة (أصله قَوَلَ).
+نوع الفعل «رمى»:|معتل ناقص|معتل أجوف|معتل مثال|صحيح سالم|الناقص ما كان آخره حرف علة.
+نوع الفعل «وقى»:|لفيف مفروق|لفيف مقرون|معتل أجوف|معتل مثال|حرفا العلة مفترقان (الواو أولًا والياء آخرًا).
+نوع الفعل «كتبَ»:|صحيح سالم|صحيح مهموز|صحيح مضعّف|معتل|حروفه الأصلية خالية من العلة والهمزة والتضعيف.
+نوع الفعل «سألَ»:|صحيح مهموز|معتل أجوف|صحيح سالم|صحيح مضعّف|فيه همزة بين حروفه الأصلية.
+نوع الفعل «شدَّ»:|صحيح مضعّف|صحيح سالم|صحيح مهموز|معتل ناقص|أصله «شدَدَ» فهو مضعّف.
+نوع الفعل «طوى»:|لفيف مقرون|لفيف مفروق|معتل ناقص فقط|معتل أجوف|حرفا العلة متجاوران (الواو والياء).
+`},
+{id:"mizan",name:"الميزان الصرفي",raw:`
+يتكوّن الميزان الصرفي من الأحرف:|الفاء والعين واللام (ف ع ل)|الكاف والتاء والباء|الألف والنون والتاء|الواو والزاي والنون|الميزان الصرفي هو «فَعَلَ».
+وزن الفعل «كَتَبَ»:|فَعَلَ|فَعِلَ|فَعُلَ|فاعَلَ|ك = ف، ت = ع، ب = ل.
+وزن الفعل «يَكْتُبُ»:|يَفْعُلُ|يَفْعَلُ|يَفْعِلُ|فَعَلَ|نزن الحروف الزائدة بلفظها: يَفْعُلُ.
+وزن كلمة «كاتِب»:|فاعِل|فَعِيل|مَفْعُول|فَعّال|زيدت ألف بعد الفاء: فاعِل.
+وزن كلمة «مَكْتُوب»:|مَفْعُول|مَفْعَل|فاعُول|فَعُول|زيدت الميم والواو: مَفْعُول.
+وزن الفعل «اسْتَغْفَرَ»:|اسْتَفْعَلَ|افْتَعَلَ|تَفَعَّلَ|انْفَعَلَ|الحروف الأصلية «غفر»، والزائد «است».
+وزن فعل الأمر «قُلْ»:|فُلْ|فُعْ|فُعْلْ|اُفْعُلْ|حُذفت عين الفعل (الواو)، فنحذف العين من الميزان.
+وزن الفعل «قالَ»:|فَعَلَ|فالَ|فاعَلَ|فَعْلَ|أصله «قَوَلَ» على وزن فَعَلَ.
+وزن فعل الأمر «عِدْ»:|عِلْ|فِعْلْ|اِفْعِلْ|فِلْ|حُذفت فاء الفعل (الواو من وعد)، فوزنه عِلْ.
+وزن الفعل «انْكَسَرَ»:|انْفَعَلَ|افْتَعَلَ|اسْتَفْعَلَ|تَفاعَلَ|الحروف الأصلية «كسر»، والزائد الهمزة والنون.
+`}
+];
+LESSONS.forEach(L=>{
+  L.qs=L.raw.trim().split("\n").map(l=>{const p=l.split("|");return{q:p[0].trim(),o:p.slice(1,-1).map(s=>s.trim()),e:p[p.length-1].trim(),lesson:L.name}});
+});
+const MIX={id:"mix",name:"مراجعة شاملة",mix:true};
+
+/* ======================================================
+   السائقون والمتسابقون
+   ====================================================== */
+const DRIVERS=[
+  {name:"كِنان",desc:"شجاع، شعر أزرق داكن",girl:false,hair:"#263472",hair2:"#3d55b0",band:"#ff3b55",eye:"#3f8cff",jacket:"#1f1b33",car:350},
+  {name:"ليان",desc:"ذكية، شعر وردي",girl:true,hair:"#ff74b4",hair2:"#ffa9d2",band:"#3fe3ff",eye:"#9b5cff",jacket:"#f3eefe",car:192}
+];
+const RIVALS=[
+  {name:"البرق",hue:48,T:34,lane:-0.52},
+  {name:"الصقر",hue:272,T:43,lane:0.5},
+  {name:"النمر",hue:130,T:53,lane:0.02}
+];
+const CFG={base:5200,delta:450,firstGate:450,gap:550,D:5,roadHalf:5,cruise:100,nQ:5};
+const ORD=["الأول","الثاني","الثالث","الرابع"];
+const KEYS=["أ","ب","ج","د"];
+const RM=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function portrait(d){
+  const skin="#ffe3cd",skin2="#f6c9ad";
+  const back=d.girl?`<path d="M44 92 C26 172 50 198 60 204 L140 204 C150 198 174 172 156 92 Z" fill="${d.hair}"/><path d="M150 80 C186 92 192 140 176 176 C172 150 164 120 150 104 Z" fill="${d.hair2}"/>`:"";
+  const front=d.girl
+   ?`<path d="M46 104 C38 44 162 44 154 104 L146 88 L138 106 C130 94 118 86 108 82 C102 94 92 102 76 106 C82 96 86 88 86 82 C74 90 64 98 54 106 Z" fill="${d.hair}"/><path d="M70 60 C90 50 112 50 130 58" stroke="${d.hair2}" stroke-width="5" fill="none" stroke-linecap="round" opacity=".7"/>`
+   :`<path d="M48 102 L38 72 L58 64 L48 34 L78 48 L84 18 L102 42 L120 16 L126 46 L152 32 L144 62 L162 70 L152 102 L140 88 L132 106 L120 86 L110 102 L100 84 L90 102 L80 86 L68 106 L60 90 Z" fill="${d.hair}"/><path d="M84 22 L96 44 M120 20 L118 44" stroke="${d.hair2}" stroke-width="4" stroke-linecap="round"/>`;
+  return `<svg viewBox="0 0 200 200" aria-hidden="true">${back}
+  <path d="M26 204 C30 174 64 160 100 160 C136 160 170 174 174 204 Z" fill="${d.jacket}"/>
+  <path d="M84 162 L100 182 L116 162" fill="none" stroke="${d.band}" stroke-width="5"/>
+  <rect x="88" y="140" width="24" height="26" rx="6" fill="${skin2}"/>
+  <ellipse cx="55" cy="116" rx="6" ry="10" fill="${skin2}"/><ellipse cx="145" cy="116" rx="6" ry="10" fill="${skin2}"/>
+  <path d="M56 98 C56 142 78 168 100 172 C122 168 144 142 144 98 C144 66 56 66 56 98 Z" fill="${skin}"/>
+  <path d="M68 107 Q80 101 91 107" stroke="#3a2340" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+  <path d="M109 107 Q120 101 132 107" stroke="#3a2340" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+  <g><ellipse cx="80" cy="124" rx="11" ry="14" fill="#1b1033"/><ellipse cx="80" cy="127" rx="8" ry="10" fill="${d.eye}"/><circle cx="76.5" cy="119" r="4.2" fill="#fff"/><circle cx="83" cy="131" r="1.8" fill="#fff"/></g>
+  <g><ellipse cx="120" cy="124" rx="11" ry="14" fill="#1b1033"/><ellipse cx="120" cy="127" rx="8" ry="10" fill="${d.eye}"/><circle cx="116.5" cy="119" r="4.2" fill="#fff"/><circle cx="123" cy="131" r="1.8" fill="#fff"/></g>
+  <ellipse cx="70" cy="144" rx="8" ry="3.6" fill="#ff8fa6" opacity=".5"/><ellipse cx="130" cy="144" rx="8" ry="3.6" fill="#ff8fa6" opacity=".5"/>
+  <path d="M100 136 L98 142 L101 142" stroke="#d99a86" stroke-width="2" fill="none" stroke-linecap="round"/>
+  ${d.girl?'<path d="M92 151 Q100 158 108 151" stroke="#b6405b" stroke-width="2.8" fill="#ff8fa6" stroke-linecap="round"/>':'<path d="M91 152 Q102 157 110 148" stroke="#b6405b" stroke-width="2.8" fill="none" stroke-linecap="round"/>'}
+  ${front}
+  <path d="M50 84 Q100 62 150 84" stroke="${d.band}" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M146 80 C166 70 182 80 196 72 C188 88 170 92 150 90 Z" fill="${d.band}"/>
+  <path d="M148 86 C164 92 178 104 192 100 C180 112 162 106 148 94 Z" fill="${d.band}" opacity=".85"/>
+  </svg>`;
+}
+
+/* ======================================================
+   الصوت
+   ====================================================== */
+const SND={ctx:null,on:true,eng:null,engG:null,flt:null,
+  init(){if(this.ctx)return;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;this.ctx=new A();const o=this.ctx.createOscillator();o.type="sawtooth";const f=this.ctx.createBiquadFilter();f.type="lowpass";f.frequency.value=520;const g=this.ctx.createGain();g.gain.value=0;o.connect(f);f.connect(g);g.connect(this.ctx.destination);o.start();this.eng=o;this.engG=g;this.flt=f;}catch(e){this.ctx=null}},
+  engine(speed,active){if(!this.ctx)return;const t=this.ctx.currentTime;this.engG.gain.setTargetAtTime(this.on&&active?0.03:0,t,0.12);this.eng.frequency.setTargetAtTime(48+speed*0.95,t,0.12);this.flt.frequency.setTargetAtTime(380+speed*4,t,0.15);},
+  tone(f,d,type,v,delay){if(!this.ctx||!this.on)return;const t0=this.ctx.currentTime+(delay||0);const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type=type||"sine";o.frequency.setValueAtTime(f,t0);g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(v||0.12,t0+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t0+d);o.connect(g);g.connect(this.ctx.destination);o.start(t0);o.stop(t0+d+0.05);},
+  good(){[523,659,784,1047].forEach((f,i)=>this.tone(f,0.28,"triangle",0.14,i*0.08));},
+  bad(){this.tone(196,0.35,"square",0.06);this.tone(147,0.5,"square",0.06,0.16);},
+  beep(hi){this.tone(hi?880:440,hi?0.45:0.2,"square",0.06);},
+  bump(){this.tone(90,0.25,"sawtooth",0.1);},
+  win(){[392,523,659,784,1047,1319].forEach((f,i)=>this.tone(f,0.35,"triangle",0.12,i*0.11));}
+};
+
+/* ======================================================
+   الحالة
+   ====================================================== */
+const $=s=>document.querySelector(s);
+const cv=$("#cv"),ctx=cv.getContext("2d");
+let W=800,H=600,HZ=250;
+const G={state:"menu",pos:0,speed:45,px:0,steer:0,t:0,raceT:0,finishLen:CFG.base,finishTarget:CFG.base,gates:[],gi:0,nitro:0,slow:0,shake:0,bumpCD:0,results:[],questions:[],lesson:LESSONS[0],driver:0,finishTime:0,bgX:0,parts:[],locked:false,correct:0,shown:false};
+let store={};try{store=JSON.parse(localStorage.getItem("nahw-race")||"{}")||{}}catch(e){store={}}
+function save(){try{localStorage.setItem("nahw-race",JSON.stringify(store))}catch(e){}}
+if(typeof store.driver==="number")G.driver=store.driver%2;
+if(store.muted)SND.on=false;
+if(store.lesson){const f=LESSONS.find(l=>l.id===store.lesson);G.lesson=f||(store.lesson==="mix"?MIX:LESSONS[0]);}
+
+/* ======================================================
+   المشهد
+   ====================================================== */
+const C={grassA:"#2c5a3f",grassB:"#275238",rumA:"#f2ecff",rumB:"#e2335a",roadA:"#3b3553",roadB:"#37314e",lane:"#f7f1ff",edge:"#e8e2f8"};
+let mtn1=[],mtn2=[],starsBg=[];
+function rnd(i){const x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x)}
+function buildBg(){
+  mtn1=[];mtn2=[];starsBg=[];
+  const n=24;
+  for(let i=0;i<=n;i++){mtn1.push(0.35+0.65*rnd(i+3));mtn2.push(0.3+0.7*rnd(i+71));}
+  for(let i=0;i<70;i++)starsBg.push([rnd(i+900),rnd(i+1400)*0.55,rnd(i+2100)]);
+}
+function resize(){
+  const r=cv.getBoundingClientRect();
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  W=Math.max(320,r.width);H=Math.max(320,r.height);
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  HZ=Math.round(H*(W<H?0.44:0.42));
+}
+function curAt(p){return 0.0058*Math.sin(p/720)*Math.sin(p/265+1.3)}
+function shiftM(z){const zc=Math.min(z,260)-CFG.D;return curAt(G.pos)*zc*zc*0.5}
+function proj(z,lat){ // lat in road-half units
+  const s=CFG.D/z, hw=s*W*0.62, k=hw/CFG.roadHalf;
+  const cx=W/2+shiftM(z)*k-G.px*hw;
+  return {s,hw,k,x:cx+lat*hw,y:HZ+s*(H-HZ)};
+}
+
+function drawSky(){
+  const g=ctx.createLinearGradient(0,0,0,HZ);
+  g.addColorStop(0,"#140c35");g.addColorStop(0.45,"#4a1f6e");g.addColorStop(0.8,"#c2426f");g.addColorStop(1,"#ff9a5a");
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,HZ+2);
+  for(const s of starsBg){ctx.globalAlpha=0.35+0.5*Math.abs(Math.sin(G.t*0.8+s[2]*9));ctx.fillStyle="#fff";ctx.fillRect(s[0]*W,s[1]*HZ,1.6,1.6)}
+  ctx.globalAlpha=1;
+  // sun
+  const sx=W*0.62, sy=HZ-H*0.05, sr=Math.min(W,H)*0.13;
+  const sg=ctx.createRadialGradient(sx,sy,sr*0.2,sx,sy,sr*2.6);
+  sg.addColorStop(0,"rgba(255,220,140,.9)");sg.addColorStop(0.35,"rgba(255,140,110,.35)");sg.addColorStop(1,"rgba(255,120,120,0)");
+  ctx.fillStyle=sg;ctx.fillRect(0,0,W,HZ);
+  ctx.fillStyle="#ffe2a0";ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.fill();
+  // clouds
+  ctx.fillStyle="rgba(255,170,190,.28)";
+  for(let i=0;i<5;i++){
+    const cx=((rnd(i+40)*W*1.6-G.bgX*0.15+G.t*6*(0.5+rnd(i+50)))%(W*1.6)+W*1.6)%(W*1.6)-W*0.3;
+    const cy=HZ*(0.25+rnd(i+60)*0.45), cw=W*(0.12+rnd(i+70)*0.12);
+    ctx.beginPath();ctx.ellipse(cx,cy,cw,cw*0.12,0,0,Math.PI*2);ctx.ellipse(cx+cw*0.35,cy-cw*0.07,cw*0.5,cw*0.12,0,0,Math.PI*2);ctx.fill();
+  }
+  mountains(mtn2,0.25,H*0.2,"#5b2a6e",0.45);
+  mountains(mtn1,0.55,H*0.12,"#2d1c4f",0.75);
+}
+function mountains(arr,par,amp,col){
+  const n=arr.length-1, span=W*1.5, seg=span/n;
+  let off=(-G.bgX*par)%span; if(off>0)off-=span;
+  ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(off,HZ+1);
+  for(let rep=0;rep<3;rep++){
+    for(let i=0;i<=n;i++){
+      const x=off+rep*span+i*seg; ctx.lineTo(x,HZ-arr[i]*amp);
+    }
+  }
+  ctx.lineTo(off+3*span,HZ+1);ctx.closePath();ctx.fill();
+}
+function drawRoad(){
+  const D=CFG.D;
+  for(let y=H;y>HZ;y-=2){
+    const s=(y-HZ)/(H-HZ), z=D/s, hw=s*W*0.62, k=hw/CFG.roadHalf;
+    const cx=W/2+shiftM(z)*k-G.px*hw;
+    const wz=G.pos+z, alt=Math.floor(wz/5)%2===0;
+    ctx.fillStyle=alt?C.grassA:C.grassB;ctx.fillRect(0,y-2,W,2.6);
+    const rw=hw*0.09;
+    ctx.fillStyle=alt?C.rumA:C.rumB;ctx.fillRect(cx-hw-rw,y-2,2*(hw+rw),2.6);
+    ctx.fillStyle=alt?C.roadA:C.roadB;ctx.fillRect(cx-hw,y-2,2*hw,2.6);
+    ctx.fillStyle=C.edge;const ew=Math.max(1,hw*0.018);
+    ctx.fillRect(cx-hw*0.94-ew/2,y-2,ew,2.6);ctx.fillRect(cx+hw*0.94-ew/2,y-2,ew,2.6);
+    if(Math.floor(wz/8)%2===0){
+      const lw=Math.max(1,hw*0.022);ctx.fillStyle=C.lane;
+      ctx.fillRect(cx-hw*0.32-lw/2,y-2,lw,2.6);ctx.fillRect(cx+hw*0.32-lw/2,y-2,lw,2.6);
+    }
+  }
+  const fg=ctx.createLinearGradient(0,HZ,0,HZ+(H-HZ)*0.22);
+  fg.addColorStop(0,"rgba(255,140,120,.75)");fg.addColorStop(1,"rgba(255,140,120,0)");
+  ctx.fillStyle=fg;ctx.fillRect(0,HZ,W,(H-HZ)*0.22);
+}
+const WORDS=["فاعل","مبتدأ","خبر","حال","ظرف","مثنى","فعل","تمييز","نعت","مضارع","أمر","ماضٍ"];
+function sceneryList(out){
+  const step=26, i0=Math.floor((G.pos+CFG.D)/step), i1=Math.floor((G.pos+300)/step);
+  for(let i=i0;i<=i1;i++){
+    const wp=i*step, z=wp-G.pos; if(z<CFG.D*0.8)continue;
+    const r1=rnd(i), r2=rnd(i+999), side=r1<0.5?-1:1;
+    let type=r2<0.38?"cypress":r2<0.66?"tree":r2<0.86?"lamp":"board";
+    const lat=side*(type==="lamp"?1.22:1.45+rnd(i+77)*1.1);
+    out.push({z,draw:()=>drawProp(type,z,lat,i,side)});
+    if(rnd(i+555)<0.5){const lat2=-side*(1.6+rnd(i+33)*1.6);out.push({z:z+3,draw:()=>drawProp(rnd(i+12)<0.5?"cypress":"tree",z+3,lat2,i+5,-side)})}
+  }
+}
+function drawProp(type,z,lat,i,side){
+  const p=proj(z,lat); if(p.y<=HZ)return;
+  const k=p.k, x=p.x, y=p.y;
+  if(x<-k*8||x>W+k*8)return;
+  const fade=Math.min(1,(300-z)/80);
+  ctx.globalAlpha=fade;
+  if(type==="cypress"){
+    ctx.fillStyle="#3b2a2a";ctx.fillRect(x-k*0.2,y-k*1.2,k*0.4,k*1.2);
+    ctx.fillStyle="#17402f";ctx.beginPath();ctx.ellipse(x,y-k*4.4,k*1.05,k*3.6,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#215a40";ctx.beginPath();ctx.ellipse(x-k*0.3,y-k*4.8,k*0.5,k*2.6,0,0,Math.PI*2);ctx.fill();
+  }else if(type==="tree"){
+    ctx.fillStyle="#4a3128";ctx.fillRect(x-k*0.28,y-k*2.4,k*0.56,k*2.4);
+    ctx.fillStyle="#1f4f36";ctx.beginPath();ctx.arc(x,y-k*3.9,k*2,0,Math.PI*2);ctx.arc(x-k*1.3,y-k*3.2,k*1.3,0,Math.PI*2);ctx.arc(x+k*1.3,y-k*3.3,k*1.4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="rgba(255,150,120,.25)";ctx.beginPath();ctx.arc(x+k*0.6,y-k*4.5,k*1.1,0,Math.PI*2);ctx.fill();
+  }else if(type==="lamp"){
+    ctx.fillStyle="#1d1830";ctx.fillRect(x-k*0.1,y-k*6.5,k*0.2,k*6.5);
+    const ax=x-side*k*1.4;
+    ctx.fillRect(Math.min(x,ax),y-k*6.5,Math.abs(ax-x),k*0.16);
+    const lg=ctx.createRadialGradient(ax,y-k*6.3,0,ax,y-k*6.3,k*2.2);
+    lg.addColorStop(0,"rgba(255,230,160,.95)");lg.addColorStop(1,"rgba(255,200,120,0)");
+    ctx.fillStyle=lg;ctx.fillRect(ax-k*2.2,y-k*8.5,k*4.4,k*4.4);
+  }else{
+    ctx.fillStyle="#1d1830";ctx.fillRect(x-k*2.2,y-k*3,k*0.25,k*3);ctx.fillRect(x+k*1.95,y-k*3,k*0.25,k*3);
+    const bg=ctx.createLinearGradient(0,y-k*6.2,0,y-k*3);bg.addColorStop(0,"#3fe3ff");bg.addColorStop(1,"#7b5cff");
+    ctx.fillStyle=bg;ctx.fillRect(x-k*3,y-k*6.2,k*6,k*3.2);
+    ctx.strokeStyle="#f7f1ff";ctx.lineWidth=Math.max(1,k*0.12);ctx.strokeRect(x-k*3,y-k*6.2,k*6,k*3.2);
+    if(k>1.8){ctx.fillStyle="#130d2f";ctx.font=`${Math.round(k*1.7)}px Lalezar, Cairo, sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(WORDS[i%WORDS.length],x,y-k*4.55)}
+  }
+  ctx.globalAlpha=1;
+}
+function drawGate(z,label,col){
+  const L=proj(z,-1.18),R=proj(z,1.18); if(L.y<=HZ)return;
+  const k=L.k, y=L.y, top=y-k*6.2;
+  ctx.fillStyle="#1d1830";ctx.fillRect(L.x-k*0.35,top,k*0.7,y-top);ctx.fillRect(R.x-k*0.35,top,k*0.7,y-top);
+  const bh=k*1.9;
+  ctx.fillStyle=col;ctx.fillRect(L.x-k*0.5,top-bh*0.2,R.x-L.x+k,bh);
+  ctx.fillStyle="rgba(255,255,255,.25)";ctx.fillRect(L.x-k*0.5,top-bh*0.2,R.x-L.x+k,bh*0.28);
+  if(k>1.2){ctx.fillStyle="#130d2f";ctx.font=`${Math.round(k*1.35)}px Lalezar, Cairo, sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(label,(L.x+R.x)/2,top+bh*0.32)}
+}
+function drawFinish(z){
+  const L=proj(z,-1.2),R=proj(z,1.2); if(L.y<=HZ)return;
+  const k=L.k,y=L.y,top=y-k*6.5,bh=k*1.6;
+  ctx.fillStyle="#f7f1ff";ctx.fillRect(L.x-k*0.3,top,k*0.6,y-top);ctx.fillRect(R.x-k*0.3,top,k*0.6,y-top);
+  const w=R.x-L.x, n=16, cw=w/n;
+  for(let r=0;r<2;r++)for(let c=0;c<n;c++){ctx.fillStyle=(r+c)%2?"#111":"#fff";ctx.fillRect(L.x+c*cw,top+r*bh/2,cw+0.5,bh/2+0.5)}
+  // line on road
+  const L2=proj(z,-1),R2=proj(z,1);const lh=Math.max(2,k*0.6);
+  for(let c=0;c<n;c++){ctx.fillStyle=c%2?"#111":"#fff";ctx.fillRect(L2.x+c*(R2.x-L2.x)/n,y-lh,(R2.x-L2.x)/n+0.5,lh)}
+}
+
+function hsl(h,s,l,a){return `hsla(${h},${s}%,${l}%,${a==null?1:a})`}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();ctx.fill()}
+function drawCar(x,y,w,hue,o){
+  const h=w*0.62;
+  ctx.save();ctx.translate(x,y);if(o.tilt)ctx.rotate(o.tilt);
+  ctx.fillStyle="rgba(0,0,0,.4)";ctx.beginPath();ctx.ellipse(0,-h*0.02,w*0.58,h*0.1,0,0,Math.PI*2);ctx.fill();
+  // tyres
+  ctx.fillStyle="#120f1c";rr(-w*0.5,-h*0.36,w*0.2,h*0.36,w*0.04);rr(w*0.3,-h*0.36,w*0.2,h*0.36,w*0.04);
+  ctx.fillStyle="rgba(255,255,255,.12)";const tr=(G.pos*3)%1;
+  for(let i=0;i<3;i++){const ty=-h*0.34+((i/3+tr)%1)*h*0.3;ctx.fillRect(-w*0.49,ty,w*0.18,h*0.025);ctx.fillRect(w*0.31,ty,w*0.18,h*0.025)}
+  // driver
+  if(o.driver)drawDriverBack(0,-h*0.64,w,o.driver);
+  else{
+    ctx.fillStyle=hsl(o.hue2||hue,30,18);ctx.beginPath();ctx.ellipse(0,-h*0.66,w*0.18,h*0.12,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=hsl(hue,85,58);ctx.beginPath();ctx.arc(0,-h*0.86,w*0.11,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#fff";ctx.fillRect(-w*0.11,-h*0.88,w*0.22,h*0.04);
+  }
+  // roll hoop
+  ctx.strokeStyle="#15121f";ctx.lineWidth=w*0.035;ctx.beginPath();ctx.moveTo(-w*0.2,-h*0.62);ctx.quadraticCurveTo(-w*0.2,-h*0.98,0,-h*0.98);ctx.quadraticCurveTo(w*0.2,-h*0.98,w*0.2,-h*0.62);ctx.stroke();
+  // body
+  const g=ctx.createLinearGradient(0,-h*0.72,0,0);
+  g.addColorStop(0,hsl(hue,90,66));g.addColorStop(0.45,hsl(hue,80,50));g.addColorStop(1,hsl(hue,70,26));
+  ctx.fillStyle=g;ctx.beginPath();
+  ctx.moveTo(-w*0.49,-h*0.14);ctx.lineTo(-w*0.48,-h*0.5);ctx.quadraticCurveTo(-w*0.46,-h*0.64,-w*0.33,-h*0.66);
+  ctx.quadraticCurveTo(0,-h*0.72,w*0.33,-h*0.66);ctx.quadraticCurveTo(w*0.46,-h*0.64,w*0.48,-h*0.5);
+  ctx.lineTo(w*0.49,-h*0.14);ctx.quadraticCurveTo(0,-h*0.06,-w*0.49,-h*0.14);ctx.fill();
+  ctx.fillStyle="rgba(255,255,255,.35)";ctx.beginPath();ctx.ellipse(-w*0.18,-h*0.6,w*0.16,h*0.03,-0.08,0,Math.PI*2);ctx.fill();
+  // racing stripes
+  ctx.fillStyle="rgba(255,255,255,.85)";ctx.fillRect(-w*0.07,-h*0.69,w*0.04,h*0.5);ctx.fillRect(w*0.03,-h*0.69,w*0.04,h*0.5);
+  // diffuser
+  ctx.fillStyle="#17131f";ctx.beginPath();ctx.moveTo(-w*0.4,-h*0.2);ctx.lineTo(w*0.4,-h*0.2);ctx.lineTo(w*0.36,-h*0.1);ctx.lineTo(-w*0.36,-h*0.1);ctx.fill();
+  // tail lights
+  ctx.save();ctx.shadowColor="#ff2a4a";ctx.shadowBlur=o.brake?24:12;ctx.fillStyle=o.brake?"#ff5a74":"#ff2a4a";
+  rr(-w*0.45,-h*0.47,w*0.18,h*0.09,h*0.03);rr(w*0.27,-h*0.47,w*0.18,h*0.09,h*0.03);ctx.restore();
+  // plate
+  ctx.fillStyle="#f7f1ff";rr(-w*0.12,-h*0.4,w*0.24,h*0.12,h*0.02);
+  if(w>90){ctx.fillStyle="#130d2f";ctx.font=`${Math.round(h*0.09)}px Lalezar, Cairo, sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(o.plate||"نحو",0,-h*0.335)}
+  // exhaust
+  ctx.fillStyle="#2b2633";ctx.beginPath();ctx.arc(-w*0.24,-h*0.16,w*0.035,0,Math.PI*2);ctx.arc(w*0.24,-h*0.16,w*0.035,0,Math.PI*2);ctx.fill();
+  if(o.nitro){
+    for(const sx of[-0.24,0.24]){
+      const fl=h*(0.25+Math.random()*0.2);
+      const fg=ctx.createRadialGradient(w*sx,-h*0.16,0,w*sx,-h*0.16+fl*0.4,fl);
+      fg.addColorStop(0,"rgba(255,255,255,.95)");fg.addColorStop(0.3,"rgba(80,200,255,.9)");fg.addColorStop(1,"rgba(120,60,255,0)");
+      ctx.fillStyle=fg;ctx.beginPath();ctx.ellipse(w*sx,-h*0.16+fl*0.35,w*0.05,fl*0.6,0,0,Math.PI*2);ctx.fill();
+    }
+  }
+  // spoiler
+  ctx.fillStyle="#15121f";ctx.fillRect(-w*0.3,-h*0.78,w*0.04,h*0.12);ctx.fillRect(w*0.26,-h*0.78,w*0.04,h*0.12);
+  const sg=ctx.createLinearGradient(0,-h*0.84,0,-h*0.76);sg.addColorStop(0,hsl(hue,80,62));sg.addColorStop(1,hsl(hue,70,32));
+  ctx.fillStyle=sg;rr(-w*0.52,-h*0.85,w*1.04,h*0.08,h*0.02);
+  ctx.restore();
+}
+function drawDriverBack(x,y,w,d){
+  const r=w*0.115, hy=y-r*1.75, t=G.t, sp=Math.min(1,G.speed/120);
+  // shoulders
+  ctx.fillStyle=d.jacket;ctx.beginPath();ctx.ellipse(x,y-r*0.2,r*1.75,r*0.95,0,Math.PI,0);ctx.fill();
+  ctx.fillStyle=d.band;ctx.fillRect(x-r*0.12,y-r*1.1,r*0.24,r*0.9);
+  // ponytail (behind head, swinging)
+  if(d.girl){
+    const sw=Math.sin(t*7)*r*0.5*sp+r*0.3;
+    ctx.fillStyle=d.hair;ctx.beginPath();ctx.moveTo(x-r*0.35,hy+r*0.2);
+    ctx.quadraticCurveTo(x+sw,hy+r*1.6,x+sw*1.8,hy+r*2.4);ctx.quadraticCurveTo(x+sw*0.6+r*0.5,hy+r*1.4,x+r*0.4,hy+r*0.2);ctx.fill();
+  }
+  // head (hair from behind)
+  ctx.fillStyle=d.hair;ctx.beginPath();ctx.arc(x,hy,r,0,Math.PI*2);ctx.fill();
+  if(!d.girl){
+    ctx.beginPath();
+    const spikes=[[-1.0,-0.2,-1.6,-0.9],[-0.8,-0.75,-1.05,-1.6],[-0.25,-1,-0.25,-1.95],[0.35,-0.95,0.6,-1.85],[0.85,-0.6,1.45,-1.2],[1,0.05,1.55,-0.15]];
+    for(const s of spikes){
+      const wob=Math.sin(t*12+s[0]*3)*r*0.08*sp;
+      ctx.moveTo(x+s[0]*r*0.75,hy+s[1]*r*0.75);ctx.lineTo(x+s[2]*r+wob,hy+s[3]*r);ctx.lineTo(x+s[0]*r*0.25,hy+s[1]*r*0.4);
+    }
+    ctx.fill();
+  }else{
+    ctx.beginPath();ctx.ellipse(x,hy-r*0.55,r*0.95,r*0.6,0,Math.PI,0);ctx.fill();
+  }
+  ctx.fillStyle=d.hair2;ctx.beginPath();ctx.ellipse(x-r*0.35,hy-r*0.35,r*0.28,r*0.5,-0.5,0,Math.PI*2);ctx.globalAlpha=0.6;ctx.fill();ctx.globalAlpha=1;
+  // headband + fluttering tails
+  ctx.strokeStyle=d.band;ctx.lineWidth=r*0.32;ctx.beginPath();ctx.arc(x,hy+r*0.1,r*0.98,Math.PI*1.05,Math.PI*1.95,false);ctx.stroke();
+  ctx.fillStyle=d.band;
+  for(let j=0;j<2;j++){
+    const amp=r*(0.35+0.4*sp), ph=t*16+j*1.7, len=r*(1.6+0.7*sp);
+    const bx=x+r*0.25,by=hy-r*0.55;
+    ctx.beginPath();ctx.moveTo(bx,by);
+    ctx.quadraticCurveTo(bx+len*0.45,by-r*0.2+Math.sin(ph)*amp,bx+len,by+r*(0.15+j*0.35)+Math.sin(ph+1.2)*amp);
+    ctx.lineTo(bx+len*0.95,by+r*(0.5+j*0.35)+Math.sin(ph+1.2)*amp);
+    ctx.quadraticCurveTo(bx+len*0.45,by+r*0.25+Math.sin(ph)*amp,bx,by+r*0.3);ctx.fill();
+  }
+}
+
+/* particles */
+function confetti(n,x,y){
+  if(RM)n=Math.round(n/4);
+  const cols=["#ffc63d","#3fe3ff","#ff4d6d","#2fe08a","#b98cff","#fff"];
+  for(let i=0;i<n;i++)G.parts.push({x,y,vx:(Math.random()-0.5)*520,vy:-200-Math.random()*520,life:1.6+Math.random(),c:cols[i%cols.length],s:4+Math.random()*6,r:Math.random()*6,vr:(Math.random()-0.5)*14});
+}
+function drawParts(dt){
+  for(let i=G.parts.length-1;i>=0;i--){
+    const p=G.parts[i];p.life-=dt;if(p.life<=0){G.parts.splice(i,1);continue}
+    p.vy+=700*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.r+=p.vr*dt;
+    ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.globalAlpha=Math.min(1,p.life);ctx.fillStyle=p.c;ctx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);ctx.restore();
+  }
+  ctx.globalAlpha=1;
+}
+function speedLines(){
+  const n=RM?6:22, cx=W/2, cy=HZ+(H-HZ)*0.1;
+  ctx.strokeStyle="rgba(200,240,255,.55)";ctx.lineWidth=2;ctx.beginPath();
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2, r0=Math.max(W,H)*(0.25+Math.random()*0.3), r1=r0+Math.max(W,H)*(0.12+Math.random()*0.2);
+    ctx.moveTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0*0.7);ctx.lineTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1*0.7);
+  }
+  ctx.stroke();
+}
+
+/* ======================================================
+   السباق
+   ====================================================== */
+function playerFrac(){return Math.min(1,G.pos/G.finishLen)}
+function rivalFrac(r){return Math.min(1,G.raceT/r.T)}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function pickQuestions(){
+  let pool;
+  if(G.lesson.mix){pool=shuffle(LESSONS).slice(0,CFG.nQ).map(L=>shuffle(L.qs)[0])}
+  else pool=shuffle(G.lesson.qs).slice(0,CFG.nQ);
+  return pool.map(q=>({...q,order:shuffle([0,1,2,3])}));
+}
+function startRace(){
+  SND.init();if(SND.ctx&&SND.ctx.state==="suspended")SND.ctx.resume();
+  Object.assign(G,{pos:0,speed:0,px:0,raceT:0,finishLen:CFG.base,finishTarget:CFG.base,gi:0,nitro:0,slow:0,shake:0,bumpCD:0,results:[],parts:[],locked:false,correct:0,shown:false,finishTime:0});
+  G.gates=[];for(let i=0;i<CFG.nQ;i++)G.gates.push(CFG.firstGate+i*CFG.gap);
+  G.questions=pickQuestions();
+  $("#menu").hidden=true;$("#result").hidden=true;$("#qpanel").hidden=true;$("#toast").hidden=true;
+  $("#hud").hidden=false;$("#stL").hidden=false;$("#stR").hidden=false;
+  $("#lessonTag").textContent=G.lesson.name;
+  buildPips();buildTrack();
+  G.state="countdown";
+  const seq=["3","2","1","انطلق!"];let i=0;const box=$("#count");box.hidden=false;
+  const tick=()=>{
+    if(i<seq.length){box.innerHTML=`<span>${seq[i]}</span>`;SND.beep(i===3);i++;setTimeout(tick,i===4?650:800);if(i===4){G.state="drive"}}
+    else{box.hidden=true}
+  };
+  tick();
+}
+function buildPips(){
+  const p=$("#pips");p.innerHTML="";
+  for(let i=0;i<CFG.nQ;i++){const s=document.createElement("span");s.className="pip";p.appendChild(s)}
+  updPips();
+}
+function updPips(){
+  [...$("#pips").children].forEach((s,i)=>{
+    const r=G.results[i];s.className="pip"+(r?(r.ok?" ok":" no"):(i===G.gi&&G.state!=="finished"?" cur":""));
+  });
+}
+function buildTrack(){
+  const t=$("#track");t.querySelectorAll(".dot").forEach(d=>d.remove());
+  RIVALS.forEach((r,i)=>{const d=document.createElement("div");d.className="dot";d.dataset.r=i;d.style.background=hsl(r.hue,85,58);d.title=r.name;t.appendChild(d)});
+  const me=document.createElement("div");me.className="dot me";me.style.background=hsl(DRIVERS[G.driver].car,85,58);t.appendChild(me);
+}
+let hudT=0;
+function updHud(){
+  const pf=playerFrac();
+  let rank=1;RIVALS.forEach(r=>{if(rivalFrac(r)>pf)rank++});
+  if(G.state==="finished")rank=G.rank;
+  $("#rankNum").innerHTML=`${rank}<small>/4</small>`;
+  $("#speedNum").textContent=Math.round(G.speed*2.2);
+  $("#remain").textContent=Math.max(0,Math.round(G.finishLen-G.pos)).toLocaleString("en-US");
+  $("#track").querySelectorAll(".dot").forEach(d=>{
+    const f=d.classList.contains("me")?pf:rivalFrac(RIVALS[+d.dataset.r]);
+    d.style.right=`calc(${(f*100).toFixed(2)}% * .94)`;
+  });
+}
+function askQuestion(){
+  G.state="question";G.locked=false;
+  const q=G.questions[G.gi];
+  $("#qava").innerHTML=portrait(DRIVERS[G.driver]);$("#qnum").textContent=G.gi+1;$("#qlesson").textContent=q.lesson;
+  $("#qtext").textContent=q.q;
+  const box=$("#opts");box.innerHTML="";
+  q.order.forEach((oi,idx)=>{
+    const b=document.createElement("button");b.className="opt";b.id="opt"+idx;
+    b.innerHTML=`<span class="k">${KEYS[idx]}</span><span></span>`;b.lastChild.textContent=q.o[oi];
+    b.addEventListener("click",()=>answer(idx));box.appendChild(b);
+  });
+  $("#wrongBox").hidden=true;$("#qhint").hidden=false;
+  const p=$("#qpanel");p.hidden=false;p.style.animation="none";void p.offsetWidth;p.style.animation="";
+  setTimeout(()=>{const f=$("#opt0");if(f)f.focus({preventScroll:true})},60);
+  updPips();
+}
+function answer(idx){
+  if(G.state!=="question"||G.locked)return;G.locked=true;
+  const q=G.questions[G.gi], chosen=q.order[idx], ok=chosen===0;
+  G.results[G.gi]={ok,chosen,q};
+  const btns=[...$("#opts").children];
+  btns.forEach((b,i)=>{b.disabled=true;if(q.order[i]===0)b.classList.add("right")});
+  if(!ok)btns[idx].classList.add("wrong");
+  updPips();
+  if(ok){
+    SND.good();G.correct++;
+    setTimeout(()=>{
+      $("#qpanel").hidden=true;
+      G.gi++;G.finishTarget-=CFG.delta;G.nitro=2.4;G.state="drive";
+      let streak=0;for(let i=G.results.length-1;i>=0&&G.results[i].ok;i--)streak++;
+      const title=streak>=3?`إنجاز: سلسلة ${streak} إجابات!`:"إنجاز! طريق مختصر";
+      toast("good",title,`اختصرت ${CFG.delta} م. ${q.e}`);
+      confetti(70,W/2,H*0.7);updPips();
+    },750);
+  }else{
+    SND.bad();G.shake=0.8;
+    $("#qhint").hidden=true;$("#wrongExp").innerHTML="";
+    const e=$("#wrongExp");e.append("الصحيح: ");const b=document.createElement("b");b.textContent=q.o[0];b.style.color="var(--good)";e.append(b,". "+q.e);
+    $("#wrongBox").hidden=false;
+    setTimeout(()=>$("#contBtn").focus({preventScroll:true}),50);
+  }
+}
+function continueWrong(){
+  if(G.state!=="question")return;
+  $("#qpanel").hidden=true;
+  G.gi++;G.finishTarget+=CFG.delta;G.slow=1.6;G.state="drive";
+  toast("bad","تحويلة! +"+CFG.delta+" م","انتبه في البوابة القادمة.");
+  updPips();
+}
+let toastTimer=0;
+const MEDAL=`<svg viewBox="0 0 58 58" aria-hidden="true"><path d="M18 2 L26 22 L20 24 L12 4Z" fill="#ff4d6d"/><path d="M40 2 L32 22 L38 24 L46 4Z" fill="#3fe3ff"/><circle cx="29" cy="36" r="19" fill="#ffc63d" stroke="#b77a00" stroke-width="3"/><circle cx="29" cy="36" r="13" fill="none" stroke="#fff2b8" stroke-width="2" opacity=".7"/><path d="M29 25l3.3 6.8 7.4 1-5.4 5.2 1.3 7.4-6.6-3.5-6.6 3.5 1.3-7.4-5.4-5.2 7.4-1z" fill="#8a5600"/></svg>`;
+const SIGN=`<svg viewBox="0 0 58 58" aria-hidden="true"><path d="M29 4 L55 50 H3 Z" fill="#ffb21f" stroke="#1d1306" stroke-width="4" stroke-linejoin="round"/><path d="M19 42 V31 Q19 24 26 24 H35" fill="none" stroke="#1d1306" stroke-width="4.5" stroke-linecap="round"/><path d="M32 18 L40 24 L32 30 Z" fill="#1d1306"/></svg>`;
+function toast(kind,title,sub){
+  const t=$("#toast");t.className=kind;t.innerHTML=(kind==="good"?MEDAL:SIGN)+`<div><div class="tt"></div><div class="ts"></div></div>`;
+  t.querySelector(".tt").textContent=title;t.querySelector(".ts").textContent=sub;
+  t.hidden=false;void t.offsetWidth;t.classList.add("show");
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.hidden=true},kind==="good"?3200:2200);
+}
+function finish(){
+  G.state="finished";G.finishTime=G.raceT;
+  G.rank=1+RIVALS.filter(r=>r.T<G.finishTime).length;
+  SND.win();confetti(160,W/2,H*0.5);updPips();
+  const stars=G.correct===5?3:G.correct>=3?2:G.correct>=1?1:0;
+  const id=G.lesson.id;store.best=store.best||{};if((store.best[id]||0)<stars)store.best[id]=stars;save();
+  setTimeout(()=>showResult(stars),1700);
+}
+function starSvg(on){return `<svg viewBox="0 0 24 24"><path d="M12 2l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 16.9 6.1 20l1.2-6.5L2.5 8.9 9.1 8z" fill="${on?"#ffc63d":"rgba(255,255,255,.15)"}" stroke="${on?"#b77a00":"rgba(255,255,255,.25)"}" stroke-width="1"/></svg>`}
+function showResult(stars){
+  $("#hud").hidden=true;$("#stL").hidden=true;$("#stR").hidden=true;$("#toast").hidden=true;
+  const msgs=["لا بأس، راجع الدرس وجرّب مرة أخرى.","بداية جيدة، تستطيع أفضل!","أداء رائع، اقتربت من القمة!","بطل النحو! سباق مثالي."];
+  const sh=G.correct-(CFG.nQ-G.correct);
+  const wrap=$("#resWrap");
+  wrap.innerHTML=`
+   <div class="res-top">
+     <svg class="trophy" viewBox="0 0 120 120" aria-hidden="true"><path d="M30 18h60v22c0 20-13 34-30 34S30 60 30 40z" fill="#ffc63d" stroke="#b77a00" stroke-width="3"/><path d="M30 26H14c0 18 8 26 18 28M90 26h16c0 18-8 26-18 28" fill="none" stroke="#ffc63d" stroke-width="6" stroke-linecap="round"/><rect x="52" y="74" width="16" height="16" fill="#e0a52a"/><rect x="36" y="90" width="48" height="14" rx="3" fill="#3b2a5c"/><text x="60" y="56" text-anchor="middle" font-family="Lalezar, Cairo, sans-serif" font-size="34" fill="#7a4a00">${G.rank}</text></svg>
+     <div><div class="res-rank">المركز ${ORD[G.rank-1]}</div><div class="res-sub" id="resMsg"></div><div class="stars">${[0,1,2].map(i=>starSvg(i<stars)).join("")}</div></div>
+   </div>
+   <div class="stats">
+     <div class="stat"><div class="v">${G.correct}/${CFG.nQ}</div><div class="k">إجابات صحيحة</div></div>
+     <div class="stat"><div class="v">${G.finishTime.toFixed(1)} ث</div><div class="k">زمن السباق</div></div>
+     <div class="stat"><div class="v">${(G.finishLen/1000).toFixed(2)} كم</div><div class="k">طول طريقك</div></div>
+     <div class="stat"><div class="v">${sh>=0?"−":"+"}${Math.abs(sh)*CFG.delta} م</div><div class="k">${sh>=0?"اختصار صافٍ":"تحويلات صافية"}</div></div>
+   </div>
+   <section class="step"><h2>مراجعة الأسئلة · ${G.lesson.name}</h2><div class="review" id="review"></div></section>
+   <div class="btnrow"><button class="go" id="againBtn">سباق جديد</button><button class="ghost" id="menuBtn">اختر درسًا آخر</button></div>`;
+  $("#resMsg").textContent=msgs[stars];
+  const rv=$("#review");
+  G.results.forEach((r,i)=>{
+    const d=document.createElement("div");d.className="rv "+(r.ok?"ok":"no");
+    d.innerHTML=`<div class="m">${r.ok?"✓":"✗"}</div><div><div class="q"></div><div class="a"></div></div>`;
+    d.querySelector(".q").textContent=(i+1)+". "+r.q.q;
+    const a=d.querySelector(".a");
+    if(!r.ok){const s=document.createElement("s");s.textContent=r.q.o[r.chosen];a.append("إجابتك: ",s," · ")}
+    const b=document.createElement("b");b.textContent=r.q.o[0];a.append("الصحيح: ",b,". "+r.q.e);
+    rv.appendChild(d);
+  });
+  $("#againBtn").onclick=startRace;
+  $("#menuBtn").onclick=showMenu;
+  $("#result").hidden=false;$("#result").scrollTop=0;
+  setTimeout(()=>$("#againBtn").focus({preventScroll:true}),50);
+}
+function showMenu(){
+  G.state="menu";G.speed=45;
+  $("#result").hidden=true;$("#hud").hidden=true;$("#stL").hidden=true;$("#stR").hidden=true;$("#qpanel").hidden=true;$("#toast").hidden=true;
+  renderMenu();$("#menu").hidden=false;
+}
+
+/* ======================================================
+   الحلقة
+   ====================================================== */
+function update(dt){
+  G.t+=dt;
+  const st=G.state;
+  if(st==="question"||st==="countdown"){G.speed=st==="countdown"?0:G.speed;return}
+  let target=45;
+  if(st==="drive"){
+    G.raceT+=dt;
+    target=CFG.cruise;
+    if(G.slow>0)target=55;
+    if(G.nitro>0)target=168;
+    if(Math.abs(G.px)>1.05)target=Math.min(target,58);
+  }else if(st==="finished"){G.raceT+=dt;target=28}
+  G.nitro=Math.max(0,G.nitro-dt);G.slow=Math.max(0,G.slow-dt);G.bumpCD=Math.max(0,G.bumpCD-dt);G.shake=Math.max(0,G.shake-dt*1.6);
+  const acc=target>G.speed?(G.nitro>0?2.6:1.4):2.2;
+  G.speed+=(target-G.speed)*Math.min(1,dt*acc);
+  G.pos+=G.speed*dt;
+  G.finishLen+=(G.finishTarget-G.finishLen)*Math.min(1,dt*1.6);
+  // steering
+  if(st==="menu"){G.px+=(Math.sin(G.t*0.4)*0.25-G.px)*dt}
+  else{
+    G.px+=G.steer*dt*1.9*Math.min(1,0.4+G.speed/100);
+    G.px-=curAt(G.pos)*G.speed*dt*0.55;
+    G.px=Math.max(-1.7,Math.min(1.7,G.px));
+  }
+  G.bgX+=curAt(G.pos)*G.speed*dt*60;
+  if(st==="drive"){
+    // collisions with rivals
+    if(G.nitro<=0&&G.bumpCD<=0){
+      const pf=playerFrac();
+      RIVALS.forEach((r,i)=>{
+        const z=(rivalFrac(r)-pf)*G.finishLen, lat=r.lane+0.14*Math.sin(G.t*0.5+i*2);
+        if(z>CFG.D-1&&z<CFG.D+3.2&&Math.abs(lat-G.px)<0.42){G.speed*=0.55;G.shake=0.6;G.bumpCD=1.2;G.px+=(G.px>lat?0.25:-0.25);SND.bump()}
+      });
+    }
+    if(G.gi<CFG.nQ&&G.pos>=G.gates[G.gi]){G.pos=G.gates[G.gi];askQuestion()}
+    else if(G.gi>=CFG.nQ&&G.pos>=G.finishLen)finish();
+  }
+}
+function render(dt){
+  ctx.save();
+  if(G.shake>0&&!RM){ctx.translate((Math.random()-0.5)*G.shake*14,(Math.random()-0.5)*G.shake*10)}
+  drawSky();drawRoad();
+  const list=[];
+  sceneryList(list);
+  if(G.state!=="menu"){
+    for(let i=G.gi;i<CFG.nQ;i++){const z=G.gates[i]-G.pos;if(z>CFG.D*0.6&&z<300)list.push({z,draw:()=>drawGate(z,"سؤال "+(i+1),"#3fe3ff")})}
+    const fz=G.finishLen-G.pos;if(fz>CFG.D*0.6&&fz<300)list.push({z:fz,draw:()=>drawFinish(fz)});
+    const pf=playerFrac();
+    RIVALS.forEach((r,i)=>{
+      const z=(rivalFrac(r)-pf)*G.finishLen;
+      if(z>CFG.D*0.7&&z<300){
+        const lat=r.lane+0.14*Math.sin(G.t*0.5+i*2);
+        list.push({z,draw:()=>{const p=proj(z,lat);if(p.y<=HZ)return;const cw=carW()*p.s;ctx.globalAlpha=Math.min(1,(300-z)/60);drawCar(p.x,p.y,cw,r.hue,{plate:r.name});ctx.globalAlpha=1}});
+      }
+    });
+  }
+  list.sort((a,b)=>b.z-a.z).forEach(o=>o.draw());
+  if(G.nitro>0)speedLines();
+  const d=DRIVERS[G.driver];
+  const bob=Math.sin(G.t*18)*Math.min(2,G.speed/60);
+  drawCar(W/2,H-H*0.025+bob,carW(),d.car,{driver:d,tilt:G.steer*0.04,nitro:G.nitro>0,brake:G.slow>0||G.state==="question",plate:d.name});
+  drawParts(dt);
+  ctx.restore();
+}
+function carW(){return Math.max(130,Math.min(W*0.3,320,H*0.42))}
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  update(dt);render(dt);
+  SND.engine(G.speed,G.state==="drive"||G.state==="finished");
+  hudT+=dt;if(hudT>0.08&&G.state!=="menu"){hudT=0;updHud()}
+  requestAnimationFrame(loop);
+}
+
+/* ======================================================
+   القائمة والتحكّم
+   ====================================================== */
+function renderMenu(){
+  $("#heroAva").innerHTML=portrait(DRIVERS[G.driver]);
+  const dv=$("#drivers");dv.innerHTML="";
+  DRIVERS.forEach((d,i)=>{
+    const b=document.createElement("button");b.className="driver"+(i===G.driver?" sel":"");b.id="drv"+i;b.setAttribute("aria-pressed",i===G.driver);
+    b.innerHTML=`<div class="pic">${portrait(d)}</div><div><div class="nm"></div><div class="ds"></div></div>`;
+    b.querySelector(".nm").textContent=d.name;b.querySelector(".ds").textContent=d.desc;
+    b.onclick=()=>{G.driver=i;store.driver=i;save();renderMenu()};
+    dv.appendChild(b);
+  });
+  const ls=$("#lessons");ls.innerHTML="";
+  const best=store.best||{};
+  [...LESSONS,MIX].forEach(L=>{
+    const b=document.createElement("button");b.className="lesson"+(L.mix?" mix":"")+(G.lesson.id===L.id?" sel":"");b.id="ls-"+L.id;
+    b.setAttribute("aria-pressed",G.lesson.id===L.id);
+    const s=best[L.id]||0;
+    b.innerHTML=`<span class="ln"></span><span class="lc"></span>${s?`<span class="st" aria-label="${s} نجوم">${"★".repeat(s)}</span>`:""}`;
+    b.querySelector(".ln").textContent=L.name;
+    b.querySelector(".lc").textContent=L.mix?"سؤال من خمسة دروس مختلفة":`${L.qs.length} أسئلة · 5 في كل سباق`;
+    b.onclick=()=>{G.lesson=L;store.lesson=L.id;save();renderMenu()};
+    ls.appendChild(b);
+  });
+  const gb=$("#goBtn");gb.textContent="انطلق!";const sm=document.createElement("small");sm.textContent=G.lesson.name;gb.appendChild(sm);
+}
+function setMuteIcon(){
+  $("#muteBtn").innerHTML=SND.on
+   ?`<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`
+   :`<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+  $("#muteBtn").setAttribute("aria-label",SND.on?"كتم الصوت":"تشغيل الصوت");
+}
+$("#muteBtn").onclick=()=>{SND.on=!SND.on;store.muted=!SND.on;save();setMuteIcon();SND.init()};
+$("#goBtn").onclick=startRace;
+$("#contBtn").onclick=continueWrong;
+
+const keys={l:false,r:false};
+function updSteer(){G.steer=(keys.r?1:0)-(keys.l?1:0);$("#stL").classList.toggle("on",keys.l);$("#stR").classList.toggle("on",keys.r)}
+window.addEventListener("keydown",e=>{
+  if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A"){keys.l=true;updSteer();if(G.state!=="menu")e.preventDefault()}
+  else if(e.key==="ArrowRight"||e.key==="d"||e.key==="D"){keys.r=true;updSteer();if(G.state!=="menu")e.preventDefault()}
+  else if(G.state==="question"&&!G.locked){
+    const m={"1":0,"2":1,"3":2,"4":3,"أ":0,"ب":1,"ج":2,"د":3}[e.key];if(m!=null){answer(m);e.preventDefault()}
+  }
+});
+window.addEventListener("keyup",e=>{
+  if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A"){keys.l=false;updSteer()}
+  else if(e.key==="ArrowRight"||e.key==="d"||e.key==="D"){keys.r=false;updSteer()}
+});
+for(const [id,k] of [["#stL","l"],["#stR","r"]]){
+  const el=$(id);
+  el.addEventListener("pointerdown",e=>{e.preventDefault();keys[k]=true;updSteer();try{el.setPointerCapture(e.pointerId)}catch(_){}});
+  const up=()=>{keys[k]=false;updSteer()};
+  el.addEventListener("pointerup",up);el.addEventListener("pointercancel",up);el.addEventListener("lostpointercapture",up);
+}
+window.addEventListener("blur",()=>{keys.l=keys.r=false;updSteer()});
+window.addEventListener("resize",resize);
+
+buildBg();resize();setMuteIcon();renderMenu();
+requestAnimationFrame(loop);
+})();
+</script>
